@@ -1,0 +1,128 @@
+{% extends 'layout.html' %}
+
+{% block content %}
+<div class="flex flex-col md:flex-row gap-6">
+    <div class="w-full md:w-1/3 bg-white p-6 rounded-lg shadow-md h-min">
+        <h2 class="text-2xl font-bold text-blue-700 mb-4">Admin Panel</h2>
+        <p class="text-gray-600 mb-6">Welcome, {{ username | title }}! Manage users and view audit logs.</p>
+
+        <h3 class="text-xl font-semibold text-gray-800 mb-3">Create New User</h3>
+        <form method="POST" action="{{ url_for('create_user') }}" class="space-y-4">
+            <div>
+                <label for="new_username" class="block text-gray-700 text-sm font-bold mb-1">Username:</label>
+                <input type="text" id="new_username" name="username" required
+                       class="shadow appearance-none border rounded-md w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent">
+            </div>
+            <div>
+                <label for="new_password" class="block text-gray-700 text-sm font-bold mb-1">Password:</label>
+                <input type="password" id="new_password" name="password" required
+                       class="shadow appearance-none border rounded-md w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent">
+            </div>
+            <div>
+                <label for="new_role" class="block text-gray-700 text-sm font-bold mb-1">Role:</label>
+                <select id="new_role" name="role"
+                        class="shadow border rounded-md w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent">
+                    <option value="doctor">Doctor</option>
+                    <option value="nurse">Nurse</option>
+                    
+                </select>
+            </div>
+            <button type="submit"
+                    class="w-full bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-md focus:outline-none focus:shadow-outline transition duration-200">
+                Create User
+            </button>
+        </form>
+
+        <hr class="my-6 border-gray-300">
+
+        <h3 class="text-xl font-semibold text-gray-800 mb-3">Audit Logs</h3>
+        {% if not show_audit_logs_section %}
+            <a href="{{ url_for('audit_logs', show_logs='true') }}"
+               class="block bg-gray-600 hover:bg-gray-700 text-white font-bold py-3 px-4 rounded-md text-center transition-colors duration-200">
+                View Audit Logs
+            </a>
+        {% endif %}
+    </div>
+
+    <div class="w-full md:w-2/3 bg-white p-6 rounded-lg shadow-md flex items-center justify-center">
+        {% if show_audit_logs_section %}
+            <div class="w-full">
+                <h2 class="text-2xl font-bold text-blue-700 mb-4">Audit Log Details</h2>
+                <div class="bg-gray-50 p-4 rounded-lg shadow-inner mb-6">
+                    <form class="flex flex-col sm:flex-row items-end space-y-4 sm:space-y-0 sm:space-x-4" method="GET" action="{{ url_for('audit_logs') }}">
+                        <input type="hidden" name="show_logs" value="true">
+                        <div>
+                            <label for="start_date" class="block text-sm font-medium text-gray-700 mb-1">From Date & Time:</label>
+                            <input type="datetime-local" id="start_date" name="start_date" 
+                                   value="{{ start_date if start_date else '' }}"
+                                   class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50 p-2">
+                        </div>
+                        <div>
+                            <label for="end_date" class="block text-sm font-medium text-gray-700 mb-1">To Date & Time:</label>
+                            <input type="datetime-local" id="end_date" name="end_date"
+                                   value="{{ end_date if end_date else '' }}"
+                                   class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50 p-2">
+                        </div>
+                        <button type="submit" class="bg-purple-600 text-white px-4 py-2 rounded-md hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2">
+                            Filter Logs
+                        </button>
+                        <a href="{{ url_for('audit_logs', show_logs='true') }}" class="bg-gray-400 text-white px-4 py-2 rounded-md hover:bg-gray-500 focus:outline-none focus:ring-2 focus:ring-gray-300 focus:ring-offset-2">
+                            Clear Filter
+                        </a>
+                          <!-- Download Button -->
+                        <a href="{{ url_for('download_audit_logs', start_date=start_date, end_date=end_date) }}" class="bg-green-600 text-white px-4 py-2 rounded-md hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2">
+                            Download Logs
+                        </a>
+                    </form>
+                </div>
+                {% if audit_logs %}
+                    <div class="overflow-x-auto">
+                        <table class="min-w-full bg-white border border-gray-200 rounded-lg">
+                            <thead>
+                                <tr class="bg-gray-100 text-left text-gray-600 uppercase text-sm leading-normal">
+                                    <th class="py-3 px-6 border-b">Timestamp</th>
+                                    <th class="py-3 px-6 border-b">Editor</th>
+                                    <th class="py-3 px-6 border-b">Patient (MRN)</th>
+                                    <th class="py-3 px-6 border-b">Field</th>
+                                    <th class="py-3 px-6 border-b">Old Value</th>
+                                    <th class="py-3 px-6 border-b">New Value</th>
+                                </tr>
+                            </thead>
+                            <tbody class="text-gray-700 text-sm font-light">
+                                {% for log in audit_logs %}
+                                    <tr class="border-b border-gray-200 hover:bg-gray-50">
+                                        <td class="py-3 px-6">{{ log[0] | default('N/A') }}</td>
+                                        <td class="py-3 px-6">{{ log[1] | default('N/A') }}</td>
+                                        <td class="py-3 px-6">
+                                            {% if log[2] and log[2] != 'N/A' %}
+                                                {{ log[2] }} - {{ log[3] }} {{ log[4] }}
+                                            {% else %}
+                                                System Event
+                                            {% endif %}
+                                        </td>
+                                        <td class="py-3 px-6">{{ log[5] | default('N/A') | replace('_', ' ') | title }}</td>
+                                        <td class="py-3 px-6 max-w-xs overflow-hidden text-ellipsis whitespace-nowrap">{{ log[6] | default('N/A') }}</td>
+                                        <td class="py-3 px-6 max-w-xs overflow-hidden text-ellipsis whitespace-nowrap">{{ log[7] | default('N/A') }}</td>
+                                    </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                {% else %}
+                    <p class="text-gray-600">No audit logs found for the selected date range.</p>
+                {% endif %}
+            </div>
+        {% else %}
+        <div class="text-center text-gray-500 p-8 rounded-lg max-w-lg mx-auto">
+            <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+            </svg>
+            <h3 class="mt-2 text-sm font-medium text-gray-900">No Audit Logs Selected</h3>
+            <p class="mt-1 text-sm text-gray-500">
+                To view and filter the system's audit logs, please click the *"View Audit Logs"* button on the left sidebar.
+            </p>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

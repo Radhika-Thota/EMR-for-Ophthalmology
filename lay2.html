@@ -1,0 +1,672 @@
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        console.log('patient_view.html: DOMContentLoaded fired.');
+
+        // --- DR Risk Assessment Logic ---
+        const assessDrRiskBtn = document.getElementById('assess-dr-risk');
+        const drRiskResultDiv = document.getElementById('dr-risk-result');
+        const drRiskCategorySpan = document.getElementById('dr-risk-category');
+        const drRiskScoreSpan = document.getElementById('dr-risk-score');
+
+        if (assessDrRiskBtn) {
+            console.log('DR Risk Assessment button found. Attaching event listener.');
+            assessDrRiskBtn.addEventListener('click', async function() {
+                console.log('DR Risk Assessment button clicked. Starting assessment logic...');
+                
+                const form = document.getElementById('dr-risk-form');
+                if (!form) {
+                    console.error('Error: DR risk form not found!');
+                    if (drRiskResultDiv) {
+                        drRiskResultDiv.classList.remove('hidden');
+                        drRiskResultDiv.className = 'mt-4 p-3 rounded-md text-center bg-red-100 text-red-800';
+                        drRiskCategorySpan.textContent = 'Setup Error!';
+                        drRiskScoreSpan.textContent = 'Form elements missing. See console.';
+                    }
+                    return;
+                }
+
+                const data = {
+                    duration_diabetes_years: parseFloat(form.elements['duration_diabetes_years'].value || '0'),
+                    hba1c: parseFloat(form.elements['hba1c'].value || '0'),
+                    systolic_bp: parseFloat(form.elements['systolic_bp'].value || '0'),
+                    diastolic_bp: parseFloat(form.elements['diastolic_bp'].value || '0'),
+                    has_kidney_disease: form.elements['has_kidney_disease'].checked,
+                    has_high_cholesterol: form.elements['has_high_cholesterol'].checked
+                };
+                console.log('DR data being sent:', data);
+
+                try {
+                    const response = await fetch('/dr_risk_assessment', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify(data)
+                    });
+
+                    const result = await response.json();
+                    console.log('DR API Response received:', result);
+
+                    if (response.ok) {
+                        if (drRiskResultDiv && drRiskCategorySpan && drRiskScoreSpan) {
+                            drRiskCategorySpan.textContent = `Risk Category: ${result.risk_category}`;
+                            drRiskScoreSpan.textContent = `Risk Score: ${result.risk_score}`;
+                            drRiskResultDiv.classList.remove('hidden');
+                            drRiskResultDiv.className = 'mt-4 p-3 rounded-md text-center';
+                            
+                            if (result.risk_category === 'High Risk') {
+                                drRiskResultDiv.classList.add('bg-red-100', 'text-red-800');
+                            } else if (result.risk_category === 'Medium Risk') {
+                                drRiskResultDiv.classList.add('bg-yellow-100', 'text-yellow-800');
+                            } else {
+                                drRiskResultDiv.classList.add('bg-green-100', 'text-green-800');
+                            }
+                            console.log('DR Risk result displayed.');
+                        } else {
+                            console.error('DR Risk result display elements not found.');
+                        }
+                    } else {
+                        console.error('DR API Error Response (status ' + response.status + '):', result.error || response.statusText);
+                        if (drRiskResultDiv) {
+                            drRiskResultDiv.classList.remove('hidden');
+                            drRiskResultDiv.className = 'mt-4 p-3 rounded-md text-center bg-red-100 text-red-800';
+                            drRiskCategorySpan.textContent = 'Error during assessment!';
+                            drRiskScoreSpan.textContent = result.error || 'Please check console for details.';
+                        } else {
+                            console.error('Could not display DR risk error: result div not found.');
+                        }
+                    }
+                } catch (error) {
+                    console.error('DR Fetch error:', error);
+                    if (drRiskResultDiv) {
+                        drRiskResultDiv.classList.remove('hidden');
+                        drRiskResultDiv.className = 'mt-4 p-3 rounded-md text-center bg-red-100 text-red-800';
+                        drRiskCategorySpan.textContent = 'Network Error!';
+                        drRiskScoreSpan.textContent = 'Could not reach server. See console.';
+                    } else {
+                        console.error('Could not display DR network error: result div not found.');
+                    }
+                }
+            });
+        } else {
+            console.log('DR Risk Assessment button NOT found on this page. Skipping DR setup.');
+        }
+
+        // --- Medical Record Add/Edit Form Handling ---
+        const medicalRecordForm = document.getElementById('medicalRecordForm');
+        const medicalRecordFormTitle = document.getElementById('medical-record-form-title');
+        const medicalRecordIdInput = document.getElementById('medical_record_id');
+        const submitMedicalRecordBtn = document.getElementById('submit-medical-record-btn');
+        const cancelEditMedicalRecordBtn = document.getElementById('cancel-edit-medical-record-btn');
+        const hiddenTestResultsInput = document.getElementById('test_results_hidden'); 
+
+        // Function to clear the medical record form and reset to "Add New" mode
+        function resetMedicalRecordForm() {
+            medicalRecordIdInput.value = '';
+            document.getElementById('visit_date').value = new Date().toISOString().slice(0,10); // Today's date
+            document.getElementById('diagnosis').value = '';
+            document.getElementById('treatment').value = '';
+
+            // Clear all structured test results inputs
+            document.getElementById('va_od').value = '';
+            document.getElementById('va_os').value = '';
+            document.getElementById('va_od_corrected').value = '';
+            document.getElementById('va_os_corrected').value = '';
+            document.getElementById('iop_od').value = '';
+            document.getElementById('iop_os').value = '';
+            document.getElementById('ref_od_sph').value = '';
+            document.getElementById('ref_od_cyl').value = '';
+            document.getElementById('ref_od_ax').value = '';
+            document.getElementById('ref_os_sph').value = '';
+            document.getElementById('ref_os_cyl').value = '';
+            document.getElementById('ref_os_ax').value = '';
+            document.getElementById('sle_od_cornea').value = '';
+            document.getElementById('sle_os_cornea').value = '';
+            document.getElementById('sle_od_lens').value = '';
+            document.getElementById('sle_os_lens').value = '';
+            document.getElementById('fundus_od').value = '';
+            document.getElementById('fundus_os').value = '';
+
+            // Clear prescription fields for main form reset
+            document.getElementById('prescribe-drops').checked = false;
+            document.getElementById('drops-fields').classList.add('hidden');
+            document.getElementById('drops-fields').querySelector('.drop-name').value = '';
+            document.getElementById('drops-fields').querySelector('.drop-frequency').value = '';
+            document.getElementById('drops-fields').querySelector('.drop-duration').value = '';
+            document.querySelectorAll('.drop-field-group').forEach(group => group.remove()); // Remove dynamically added
+
+            document.getElementById('prescribe-medication').checked = false;
+            document.getElementById('medication-fields').classList.add('hidden');
+            document.getElementById('medication-fields').querySelector('.med-name').value = '';
+            document.getElementById('medication-fields').querySelector('.med-dosage').value = '';
+            document.getElementById('medication-fields').querySelector('.med-frequency').value = '';
+            document.getElementById('medication-fields').querySelector('.med-duration').value = '';
+            document.querySelectorAll('.med-field-group').forEach(group => group.remove()); // Remove dynamically added
+
+            document.getElementById('recommend-surgery').checked = false;
+            document.getElementById('surgery-fields').classList.add('hidden');
+            document.getElementById('surgery_recommendation_text').value = '';
+
+
+            hiddenTestResultsInput.value = '{}'; // Reset hidden JSON to empty object
+            console.log('Form reset. Hidden test results JSON:', hiddenTestResultsInput.value);
+
+            medicalRecordFormTitle.textContent = 'Add New Medical Record';
+            submitMedicalRecordBtn.textContent = 'Add Medical Record';
+            cancelEditMedicalRecordBtn.classList.add('hidden');
+        }
+
+        // Function to populate structured test results fields from a parsed JSON object
+        function populateTestResultsFieldsFromObject(parsedResults) {
+            // Only attempt to populate if parsedResults is a valid object and not empty or a raw_text fallback
+            // The check below ensures it's a dictionary and doesn't contain the raw_text key
+            if (typeof parsedResults === 'object' && parsedResults !== null && Object.keys(parsedResults).length > 0 && 
+                !parsedResults.hasOwnProperty('raw_text') && !parsedResults.hasOwnProperty('raw_text_error_parsing')) {
+
+                document.getElementById('va_od').value = parsedResults.VA_OD || '';
+                document.getElementById('va_os').value = parsedResults.VA_OS || '';
+                document.getElementById('va_od_corrected').value = parsedResults.VA_OD_with_correction || '';
+                document.getElementById('va_os_corrected').value = parsedResults.VA_OS_with_correction || '';
+
+                document.getElementById('iop_od').value = parsedResults.IOP_OD || '';
+                document.getElementById('iop_os').value = parsedResults.IOP_OS || '';
+
+                document.getElementById('ref_od_sph').value = parsedResults.Refraction_OD_Sph || '';
+                document.getElementById('ref_od_cyl').value = parsedResults.Refraction_OD_Cyl || '';
+                document.getElementById('ref_od_ax').value = parsedResults.Refraction_OD_Ax || '';
+                document.getElementById('ref_os_sph').value = parsedResults.Refraction_OS_Sph || '';
+                document.getElementById('ref_os_cyl').value = parsedResults.Refraction_OS_Cyl || '';
+                document.getElementById('ref_os_ax').value = parsedResults.Refraction_OS_Ax || '';
+
+                document.getElementById('sle_od_cornea').value = parsedResults.SLE_OD_Cornea || '';
+                document.getElementById('sle_os_cornea').value = parsedResults.SLE_OS_Cornea || '';
+                document.getElementById('sle_od_lens').value = parsedResults.SLE_OD_Lens || '';
+                document.getElementById('sle_os_lens').value = parsedResults.SLE_OS_Lens || '';
+
+                document.getElementById('fundus_od').value = parsedResults.Fundus_OD || '';
+                document.getElementById('fundus_os').value = parsedResults.Fundus_OS || '';
+
+                // Populate prescription fields
+                const prescriptionData = parsedResults.prescription || {};
+                
+                // Reset dynamic fields before populating
+                document.querySelectorAll('.drop-field-group').forEach(group => group.remove());
+                document.querySelectorAll('.med-field-group').forEach(group => group.remove());
+                document.getElementById('drops-fields').querySelector('.drop-name').value = '';
+                document.getElementById('drops-fields').querySelector('.drop-frequency').value = '';
+                document.getElementById('drops-fields').querySelector('.drop-duration').value = '';
+                document.getElementById('medication-fields').querySelector('.med-name').value = '';
+                document.getElementById('medication-fields').querySelector('.med-dosage').value = '';
+                document.getElementById('medication-fields').querySelector('.med-frequency').value = '';
+                document.getElementById('medication-fields').querySelector('.med-duration').value = '';
+                document.getElementById('surgery_recommendation_text').value = '';
+
+
+                if (prescriptionData.drops && prescriptionData.drops.length > 0) {
+                    document.getElementById('prescribe-drops').checked = true;
+                    document.getElementById('drops-fields').classList.remove('hidden');
+                    prescriptionData.drops.forEach((drop, index) => {
+                        let dropContainer;
+                        if (index === 0) { // First set uses the default visible fields
+                            dropContainer = dropsFieldsContainer;
+                        } else { // Subsequent sets are new dynamic fields
+                            dropContainer = addDynamicDropField();
+                        }
+                        dropContainer.querySelector('.drop-name').value = drop.name || '';
+                        dropContainer.querySelector('.drop-frequency').value = drop.frequency || '';
+                        dropContainer.querySelector('.drop-duration').value = drop.duration || '';
+                    });
+                } else {
+                    document.getElementById('prescribe-drops').checked = false;
+                    document.getElementById('drops-fields').classList.add('hidden');
+                }
+
+                if (prescriptionData.medications && prescriptionData.medications.length > 0) {
+                    document.getElementById('prescribe-medication').checked = true;
+                    document.getElementById('medication-fields').classList.remove('hidden');
+                    prescriptionData.medications.forEach((med, index) => {
+                        let medContainer;
+                        if (index === 0) { // First set uses the default visible fields
+                            medContainer = medicationFieldsContainer;
+                        } else { // Subsequent sets are new dynamic fields
+                            medContainer = addDynamicMedicationField();
+                        }
+                        medContainer.querySelector('.med-name').value = med.name || '';
+                        medContainer.querySelector('.med-dosage').value = med.dosage || '';
+                        medContainer.querySelector('.med-frequency').value = med.frequency || '';
+                        medContainer.querySelector('.med-duration').value = med.duration || '';
+                    });
+                } else {
+                    document.getElementById('prescribe-medication').checked = false;
+                    document.getElementById('medication-fields').classList.add('hidden');
+                }
+
+                if (prescriptionData.surgeryRecommendation) {
+                    document.getElementById('recommend-surgery').checked = true;
+                    document.getElementById('surgery-fields').classList.remove('hidden');
+                    document.getElementById('surgery_recommendation_text').value = prescriptionData.surgeryRecommendation;
+                } else {
+                    document.getElementById('recommend-surgery').checked = false;
+                    document.getElementById('surgery-fields').classList.add('hidden');
+                }
+
+
+            } else if (parsedResults.hasOwnProperty('raw_text') || parsedResults.hasOwnProperty('raw_text_error_parsing')) {
+                console.warn("Attempted to populate structured fields with raw_text data. Fields will remain empty.");
+            }
+        }
+
+        // Event listener for "Edit" buttons on existing medical records (unchanged)
+        document.querySelectorAll('.edit-medical-record-btn').forEach(button => {
+            button.addEventListener('click', function() {
+                console.log('Edit button clicked.');
+                resetMedicalRecordForm(); // Always clear form before populating
+                
+                const recordId = this.dataset.recordId;
+                const visitDate = this.dataset.visitDate;
+                const diagnosis = this.dataset.diagnosis;
+                const treatment = this.dataset.treatment;
+                const testResultsJsonString = this.dataset.testResults; // Raw JSON string from data attribute
+
+                medicalRecordIdInput.value = recordId;
+                document.getElementById('visit_date').value = visitDate;
+                document.getElementById('diagnosis').value = diagnosis;
+                document.getElementById('treatment').value = treatment;
+
+                if (testResultsJsonString) {
+                    try {
+                        const parsedResults = JSON.parse(testResultsJsonString);
+                        let cleanResultsForPopulation = parsedResults;
+                        if (parsedResults.hasOwnProperty('raw_text') && typeof parsedResults.raw_text === 'string') {
+                            try {
+                                const innerParsed = JSON.parse(parsedResults.raw_text);
+                                if (typeof innerParsed === 'object' && innerParsed !== null) {
+                                    cleanResultsForPopulation = innerParsed;
+                                }
+                            } catch (e) {
+                                // Inner raw_text is not JSON, so keep outer structure for `raw_text` display
+                            }
+                        } else if (parsedResults.hasOwnProperty('raw_text_error_parsing') && typeof parsedResults.raw_text_error_parsing === 'string') {
+                            try {
+                                const innerParsed = JSON.parse(parsedResults.raw_text_error_parsing);
+                                if (typeof innerParsed === 'object' && innerParsed !== null) {
+                                    cleanResultsForPopulation = innerParsed;
+                                }
+                            } catch (e) {
+                                // Inner raw_text_error_parsing is not JSON
+                            }
+                        }
+
+                        populateTestResultsFieldsFromObject(cleanResultsForPopulation);
+                        hiddenTestResultsInput.value = JSON.stringify(cleanResultsForPopulation);
+
+                    } catch (e) {
+                        console.error('Error parsing testResultsJson from data attribute for edit form population:', e);
+                        hiddenTestResultsInput.value = JSON.stringify({"raw_text_error_parsing": testResultsJsonString});
+                    }
+                }
+
+                medicalRecordFormTitle.textContent = 'Edit Medical Record';
+                submitMedicalRecordBtn.textContent = 'Update Medical Record';
+                cancelEditMedicalRecordBtn.classList.remove('hidden');
+                
+                medicalRecordForm.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            });
+        });
+
+        // Event listener for "Cancel Edit" button
+        if (cancelEditMedicalRecordBtn) {
+            cancelEditMedicalRecordBtn.addEventListener('click', function() {
+                console.log('Cancel Edit button clicked.');
+                resetMedicalRecordForm();
+                medicalRecordForm.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            });
+        }
+
+        // Function to collect all test results and prescription data
+        function collectTestResults() {
+            const results = {};
+            
+            // Visual Acuity
+            const vaOd = document.getElementById('va_od').value.trim();
+            if (vaOd) results.VA_OD = vaOd;
+            const vaOs = document.getElementById('va_os').value.trim();
+            if (vaOs) results.VA_OS = vaOs;
+            const vaOdCorrected = document.getElementById('va_od_corrected').value.trim();
+            if (vaOdCorrected) results.VA_OD_with_correction = vaOdCorrected;
+            const vaOsCorrected = document.getElementById('va_os_corrected').value.trim();
+            if (vaOsCorrected) results.VA_OS_with_correction = vaOsCorrected;
+            
+            // Intraocular Pressure
+            const iopOd = document.getElementById('iop_od').value.trim();
+            if (iopOd) results.IOP_OD = iopOd;
+            const iopOs = document.getElementById('iop_os').value.trim();
+            if (iopOs) results.IOP_OS = iopOs;
+            
+            // Refraction OD
+            const refOdSph = document.getElementById('ref_od_sph').value.trim();
+            if (refOdSph) results.Refraction_OD_Sph = refOdSph;
+            const refOdCyl = document.getElementById('ref_od_cyl').value.trim();
+            if (refOdCyl) results.Refraction_OD_Cyl = refOdCyl;
+            const refOdAx = document.getElementById('ref_od_ax').value.trim();
+            if (refOdAx) results.Refraction_OD_Ax = refOdAx;
+            
+            // Refraction OS
+            const refOsSph = document.getElementById('ref_os_sph').value.trim();
+            if (refOsSph) results.Refraction_OS_Sph = refOsSph;
+            const refOsCyl = document.getElementById('ref_os_cyl').value.trim();
+            if (refOsCyl) results.Refraction_OS_Cyl = refOsCyl;
+            const refOsAx = document.getElementById('ref_os_ax').value.trim();
+            if (refOsAx) results.Refraction_OS_Ax = refOsAx;
+            
+            // Slit Lamp Exam
+            const sleOdCornea = document.getElementById('sle_od_cornea').value.trim();
+            if (sleOdCornea) results.SLE_OD_Cornea = sleOdCornea;
+            const sleOsCornea = document.getElementById('sle_os_cornea').value.trim();
+            if (sleOsCornea) results.SLE_OS_Cornea = sleOsCornea;
+            const sleOdLens = document.getElementById('sle_od_lens').value.trim();
+            if (sleOdLens) results.SLE_OD_Lens = sleOdLens;
+            const sleOsLens = document.getElementById('sle_os_lens').value.trim();
+            if (sleOsLens) results.SLE_OS_Lens = sleOsLens;
+            
+            // Fundus Exam
+            const fundusOd = document.getElementById('fundus_od').value.trim();
+            if (fundusOd) results.Fundus_OD = fundusOd;
+            const fundusOs = document.getElementById('fundus_os').value.trim();
+            if (fundusOs) results.Fundus_OS = fundusOs;
+            
+            // Collect Prescription Data
+            const prescriptionData = collectPrescriptionData();
+            if (Object.keys(prescriptionData).length > 0) {
+                results.prescription = prescriptionData;
+            }
+            
+            return results;
+        }
+
+        // Ensure this function is called when the form is submitted
+        if (medicalRecordForm) {
+            medicalRecordForm.addEventListener('submit', function(event) {
+        // Prevent default form submission
+            event.preventDefault();
+        
+        try {
+            // Check if collectTestResults function is defined
+            if (typeof collectTestResults !== 'function') {
+                throw new Error('collectTestResults is not a function');
+            }
+            
+            const collectedData = collectTestResults();
+            const isCollectedDataEmpty = Object.keys(collectedData).length === 0;
+
+            if (!isCollectedDataEmpty) {
+                hiddenTestResultsInput.value = JSON.stringify(collectedData);
+            } else {
+                hiddenTestResultsInput.value = '{}';
+            }
+            
+            console.log('Collected Test Results:', hiddenTestResultsInput.value);
+            
+            // Now submit the form programmatically
+            this.submit();
+        } catch (error) {
+            console.error('Error during form submission:', error);
+            alert('Error occurred while submitting the form. Check console for details.');
+        }
+    });
+}
+
+        // --- New Prescription Logic ---
+        const addPrescriptionBtn = document.getElementById('add-prescription-btn');
+        const prescriptionFormContainer = document.getElementById('prescription-form-container');
+        const savePrescriptionBtn = document.getElementById('save-prescription-btn');
+        const cancelPrescriptionBtn = document.getElementById('cancel-prescription-btn');
+
+        const prescribeDropsCheckbox = document.getElementById('prescribe-drops');
+        const dropsFieldsContainer = document.getElementById('drops-fields');
+        const addDropBtn = dropsFieldsContainer.querySelector('.add-drop-btn');
+
+        const prescribeMedicationCheckbox = document.getElementById('prescribe-medication');
+        const medicationFieldsContainer = document.getElementById('medication-fields');
+        const addMedicationBtn = medicationFieldsContainer.querySelector('.add-medication-btn');
+
+        const recommendSurgeryCheckbox = document.getElementById('recommend-surgery');
+        const surgeryFieldsContainer = document.getElementById('surgery-fields');
+        const surgeryRecommendationTextarea = document.getElementById('surgery_recommendation_text');
+
+        // Toggle prescription form visibility
+        if (addPrescriptionBtn) {
+            addPrescriptionBtn.addEventListener('click', function() {
+                prescriptionFormContainer.classList.toggle('hidden');
+                // Scroll to the prescription form when shown
+                if (!prescriptionFormContainer.classList.contains('hidden')) {
+                    prescriptionFormContainer.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                }
+            });
+        }
+
+        // Toggle drops fields
+        if (prescribeDropsCheckbox) {
+            prescribeDropsCheckbox.addEventListener('change', function() {
+                if (this.checked) {
+                    dropsFieldsContainer.classList.remove('hidden');
+                } else {
+                    dropsFieldsContainer.classList.add('hidden');
+                    // Clear fields when unchecked
+                    dropsFieldsContainer.querySelector('.drop-name').value = '';
+                    dropsFieldsContainer.querySelector('.drop-frequency').value = '';
+                    dropsFieldsContainer.querySelector('.drop-duration').value = '';
+                    document.querySelectorAll('.drop-field-group').forEach(group => group.remove()); // Remove dynamically added
+
+                }
+            });
+        }
+
+        // Add dynamic drop field
+        if (addDropBtn) {
+            addDropBtn.addEventListener('click', addDynamicDropField);
+        }
+
+        function addDynamicDropField() {
+            const newGroup = document.createElement('div');
+            newGroup.className = 'flex items-center space-x-2 mt-2 drop-field-group'; // Added class for easy removal
+            newGroup.innerHTML = `
+                <input type="text" class="w-1/3 p-2 border rounded-md text-sm drop-name" placeholder="Drop Name">
+                <input type="text" class="w-1/3 p-2 border rounded-md text-sm drop-frequency" placeholder="Frequency">
+                <input type="text" class="w-1/3 p-2 border rounded-md text-sm drop-duration" placeholder="Duration">
+                <button type="button" class="remove-drop-btn text-red-600 hover:text-red-800">X</button>
+            `;
+            dropsFieldsContainer.appendChild(newGroup);
+
+            // Attach event listener to the new remove button
+            newGroup.querySelector('.remove-drop-btn').addEventListener('click', function() {
+                newGroup.remove();
+            });
+            return newGroup; // Return the new group for population during edit
+        }
+
+        // Toggle medication fields
+        if (prescribeMedicationCheckbox) {
+            prescribeMedicationCheckbox.addEventListener('change', function() {
+                if (this.checked) {
+                    medicationFieldsContainer.classList.remove('hidden');
+                } else {
+                    medicationFieldsContainer.classList.add('hidden');
+                    // Clear fields when unchecked
+                    medicationFieldsContainer.querySelector('.med-name').value = '';
+                    medicationFieldsContainer.querySelector('.med-dosage').value = '';
+                    medicationFieldsContainer.querySelector('.med-frequency').value = '';
+                    medicationFieldsContainer.querySelector('.med-duration').value = '';
+                    document.querySelectorAll('.med-field-group').forEach(group => group.remove()); // Remove dynamically added
+                }
+            });
+        }
+
+        // Add dynamic medication field
+        if (addMedicationBtn) {
+            addMedicationBtn.addEventListener('click', addDynamicMedicationField);
+        }
+
+        function addDynamicMedicationField() {
+            const newGroup = document.createElement('div');
+            newGroup.className = 'flex items-center space-x-2 mt-2 med-field-group'; // Added class for easy removal
+            newGroup.innerHTML = `
+                <input type="text" class="w-1/4 p-2 border rounded-md text-sm med-name" placeholder="Med Name">
+                <input type="text" class="w-1/4 p-2 border rounded-md text-sm med-dosage" placeholder="Dosage">
+                <input type="text" class="w-1/4 p-2 border rounded-md text-sm med-frequency" placeholder="Frequency">
+                <input type="text" class="w-1/4 p-2 border rounded-md text-sm med-duration" placeholder="Duration">
+                <button type="button" class="remove-med-btn text-red-600 hover:text-red-800">X</button>
+            `;
+            medicationFieldsContainer.appendChild(newGroup);
+
+            // Attach event listener to the new remove button
+            newGroup.querySelector('.remove-med-btn').addEventListener('click', function() {
+                newGroup.remove();
+            });
+            return newGroup; // Return the new group for population during edit
+        }
+
+
+        // Toggle surgery recommendation fields
+        if (recommendSurgeryCheckbox) {
+            recommendSurgeryCheckbox.addEventListener('change', function() {
+                if (this.checked) {
+                    surgeryFieldsContainer.classList.remove('hidden');
+                } else {
+                    surgeryFieldsContainer.classList.add('hidden');
+                    surgeryRecommendationTextarea.value = ''; // Clear field when unchecked
+                }
+            });
+        }
+
+        // Collect all prescription data
+        function collectPrescriptionData() {
+            const prescription = {};
+
+            if (prescribeDropsCheckbox.checked) {
+                const drops = [];
+                // Collect data from the initial fields
+                if (dropsFieldsContainer.querySelector('.drop-name').value.trim() ||
+                    dropsFieldsContainer.querySelector('.drop-frequency').value.trim() ||
+                    dropsFieldsContainer.querySelector('.drop-duration').value.trim()) {
+                    drops.push({
+                        name: dropsFieldsContainer.querySelector('.drop-name').value.trim(),
+                        frequency: dropsFieldsContainer.querySelector('.drop-frequency').value.trim(),
+                        duration: dropsFieldsContainer.querySelector('.drop-duration').value.trim()
+                    });
+                }
+                // Collect data from dynamically added fields
+                document.querySelectorAll('.drop-field-group').forEach(group => {
+                    if (group.querySelector('.drop-name').value.trim() ||
+                        group.querySelector('.drop-frequency').value.trim() ||
+                        group.querySelector('.drop-duration').value.trim()) {
+                        drops.push({
+                            name: group.querySelector('.drop-name').value.trim(),
+                            frequency: group.querySelector('.drop-frequency').value.trim(),
+                            duration: group.querySelector('.drop-duration').value.trim()
+                        });
+                    }
+                });
+                if (drops.length > 0) {
+                    prescription.drops = drops;
+                }
+            }
+
+            if (prescribeMedicationCheckbox.checked) {
+                const medications = [];
+                // Collect data from the initial fields
+                if (medicationFieldsContainer.querySelector('.med-name').value.trim() ||
+                    medicationFieldsContainer.querySelector('.med-dosage').value.trim() ||
+                    medicationFieldsContainer.querySelector('.med-frequency').value.trim() ||
+                    medicationFieldsContainer.querySelector('.med-duration').value.trim()) {
+                    medications.push({
+                        name: medicationFieldsContainer.querySelector('.med-name').value.trim(),
+                        dosage: medicationFieldsContainer.querySelector('.med-dosage').value.trim(),
+                        frequency: medicationFieldsContainer.querySelector('.med-frequency').value.trim(),
+                        duration: medicationFieldsContainer.querySelector('.med-duration').value.trim()
+                    });
+                }
+                // Collect data from dynamically added fields
+                document.querySelectorAll('.med-field-group').forEach(group => {
+                    if (group.querySelector('.med-name').value.trim() ||
+                        group.querySelector('.med-dosage').value.trim() ||
+                        group.querySelector('.med-frequency').value.trim() ||
+                        group.querySelector('.med-duration').value.trim()) {
+                        medications.push({
+                            name: group.querySelector('.med-name').value.trim(),
+                            dosage: group.querySelector('.med-dosage').value.trim(),
+                            frequency: group.querySelector('.med-frequency').value.trim(),
+                            duration: group.querySelector('.med-duration').value.trim()
+                        });
+                    }
+                });
+                if (medications.length > 0) {
+                    prescription.medications = medications;
+                }
+            }
+
+            if (recommendSurgeryCheckbox.checked && surgeryRecommendationTextarea.value.trim()) {
+                prescription.surgeryRecommendation = surgeryRecommendationTextarea.value.trim();
+            }
+            return prescription;
+        }
+
+        // Save Prescription Button Logic
+        if (savePrescriptionBtn) {
+            savePrescriptionBtn.addEventListener('click', function() {
+                // Collect prescription data
+                const prescriptionToSave = collectPrescriptionData();
+
+                // Get current medical record form data (including existing test results)
+                let currentMedicalRecordData = {};
+                try {
+                    currentMedicalRecordData = JSON.parse(hiddenTestResultsInput.value || '{}');
+                } catch (e) {
+                    console.error("Error parsing existing hidden test results JSON:", e);
+                    currentMedicalRecordData = {}; // Reset to empty if invalid
+                }
+                
+                // Add/update prescription to the current medical record data
+                if (Object.keys(prescriptionToSave).length > 0) {
+                    currentMedicalRecordData.prescription = prescriptionToSave;
+                } else {
+                    delete currentMedicalRecordData.prescription; // Remove if no prescription data
+                }
+
+                // Update the hidden test_results input with the combined data
+                hiddenTestResultsInput.value = JSON.stringify(currentMedicalRecordData);
+                console.log('Prescription data integrated into hidden test_results:', hiddenTestResultsInput.value);
+
+                // Hide the prescription form and clear its fields
+                prescriptionFormContainer.classList.add('hidden');
+                alert('Prescription data added to current medical record form. Click "Add/Update Medical Record" to save.');
+            });
+        }
+
+        // Cancel Prescription Button Logic
+        if (cancelPrescriptionBtn) {
+            cancelPrescriptionBtn.addEventListener('click', function() {
+                prescriptionFormContainer.classList.add('hidden');
+                // Reset fields of the prescription form only
+                document.getElementById('prescribe-drops').checked = false;
+                document.getElementById('drops-fields').classList.add('hidden');
+                document.getElementById('drops-fields').querySelector('.drop-name').value = '';
+                document.getElementById('drops-fields').querySelector('.drop-frequency').value = '';
+                document.getElementById('drops-fields').querySelector('.drop-duration').value = '';
+                document.querySelectorAll('.drop-field-group').forEach(group => group.remove());
+
+                document.getElementById('prescribe-medication').checked = false;
+                document.getElementById('medication-fields').classList.add('hidden');
+                document.getElementById('medication-fields').querySelector('.med-name').value = '';
+                document.getElementById('medication-fields').querySelector('.med-dosage').value = '';
+                document.getElementById('medication-fields').querySelector('.med-frequency').value = '';
+                document.getElementById('medication-fields').querySelector('.med-duration').value = '';
+                document.querySelectorAll('.med-field-group').forEach(group => group.remove());
+
+                document.getElementById('recommend-surgery').checked = false;
+                document.getElementById('surgery-fields').classList.add('hidden');
+                document.getElementById('surgery_recommendation_text').value = '';
+            });
+        }
+    });
+</script>

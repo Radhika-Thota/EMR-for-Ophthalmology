@@ -1,0 +1,564 @@
+{% extends 'layout.html' %}
+
+{% block content %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Patient Record</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    animation: {
+                        'fade-in': 'fadeIn 0.5s ease-in-out forwards',
+                        'slide-in': 'slideIn 0.3s ease-out forwards',
+                        'pulse-slow': 'pulse 3s infinite',
+                    },
+                    keyframes: {
+                        fadeIn: {
+                            '0%': { opacity: '0' },
+                            '100%': { opacity: '1' },
+                        },
+                        slideIn: {
+                            '0%': { transform: 'translateY(-10px)', opacity: '0' },
+                            '100%': { transform: 'translateY(0)', opacity: '1' },
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+</head>
+<body class="bg-gray-50 min-h-screen">
+    <div class="container mx-auto px-4 py-6">
+        {# Main Patient Record Header with Prescription Button #}
+        <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 border-b border-gray-200 pb-3 animate-slide-in">
+            <h2 class="text-3xl font-bold text-[#2d5a2f]">Patient Record: {{ patient.first_name }} {{ patient.last_name }} (UHID: {{ patient.uhid }})</h2>
+            
+            <div class="flex flex-wrap gap-3">
+                {% if session['user_role'] == 'doctor' %}
+                <a href="{{ url_for('prescription_page', uhid=patient.uhid) }}" 
+                   class="bg-blue-600 hover:bg-blue-700 text-white text-base font-semibold py-1.5 px-3 rounded-md shadow-sm transition-all duration-300 ease-in-out flex items-center hover:scale-105 hover:shadow-lg">
+                    <i class="fa-solid fa-notes-medical mr-2" style="font-size:20px; color:white;"></i>
+                    New Prescription
+                </a>
+                {% endif %}
+                <a href="{{ url_for('view_medical_history', uhid=patient.uhid) }}" 
+                   class="bg-green-600 hover:bg-green-700 text-white text-base font-semibold py-1.5 px-3 rounded-md shadow-sm transition-all duration-300 ease-in-out flex items-center hover:scale-105 hover:shadow-lg">
+                    <i class="fa-solid fa-history mr-2" style="font-size:20px; color:white;"></i>
+                    View Medical History
+                </a>
+            </div>
+        </div>
+        
+        <!-- FIX: Added the "Request Scan" button here with corrected URL and styling -->
+         {% if session['user_role'] == 'doctor' %}
+        <div class="mb-6 flex flex-wrap gap-3">
+            <a href="{{ url_for('scan', uhid=patient.uhid) }}"
+
+               class="inline-block bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline transition-all duration-300 ease-in-out hover:scale-105 active:scale-95">
+                Request Scan
+            </a>
+            <a href="{{ url_for('test_login', uhid=patient.uhid) }}"
+               class="inline-block bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline transition-all duration-300 ease-in-out hover:scale-105 active:scale-95">
+               Lab tests
+            </a>
+        </div>
+         {% endif %}
+
+        {# START OF THE MAIN TWO-COLUMN LAYOUT CONTAINER #}
+        <div class="flex flex-col lg:flex-row gap-6">
+            <!-- Left Column - 2/3 width on large screens -->
+            <div class="w-full lg:w-2/3 space-y-6">
+                <!-- Patient Information Card -->
+                <div class="bg-white p-6 rounded-lg shadow-md transition-all duration-300 hover:shadow-lg">
+                    <h3 class="text-2xl font-semibold text-[#2d5a2f] mb-6">Patient Information</h3>
+                    {# Patient details form is conditional based on user role #}
+                    {% if session['user_role'] == 'doctor' %}
+                    <!-- Patient details form is conditional based on user role -->
+                    <form method="POST" action="{{ url_for('view_patient', uhid=patient.uhid) }}">
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+                            <div class="md:col-span-2">
+                                  <label for="mrn" class="block text-gray-700 text-sm font-bold mb-2">UHID:</label>
+                                  <input type="text" id="uhid" name="uhid" value="{{ patient.uhid }}" readonly
+                                       class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 bg-gray-100 leading-tight focus:outline-none focus:shadow-outline transition-colors duration-200">
+                            </div>
+                            <div>
+                                <label for="first_name" class="block text-gray-700 text-sm font-bold mb-2">First Name:</label>
+                                <input type="text" id="first_name" name="first_name" value="{{ patient.first_name }}"
+                                       class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline transition-colors duration-200">
+                            </div>
+                            <div>
+                                 <label for="last_name" class="block text-gray-700 text-sm font-bold mb-2">Last Name:</label>
+                                <input type="text" id="last_name" name="last_name" value="{{ patient.last_name }}"
+                                       class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline transition-colors duration-200">
+                            </div>
+                            <div>
+                                <label for="dob" class="block text-gray-700 text-sm font-bold mb-2">Date of Birth:</label>
+                                <input type="date" id="dob" name="dob" value="{{ patient.dob }}"
+                                       class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline transition-colors duration-200">
+                            </div>
+                            <div>
+                                 <label for="gender" class="block text-gray-700 text-sm font-bold mb-2">Gender:</label>
+                                 <select id="gender" name="gender"
+                                    class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline">
+                                <option value="Male" {% if patient.gender == 'Male' %}selected{% endif %}>Male</option>
+                                <option value="Female" {% if patient.gender == 'Female' %}selected{% endif %}>Female</option>
+                                <option value="Other" {% if patient.gender == 'Other' %}selected{% endif %}>Other</option>
+                                </select>
+                            </div>
+                            <div>
+                                 <label for="address" class="block text-gray-700 text-sm font-bold mb-2">Address:</label>
+                                 <input type="text" id="address" name="address" value="{{ patient.address }}"
+                                       class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline transition-colors duration-200">
+                            </div>
+                            <div>
+                                <label for="phone" class="block text-gray-700 text-sm font-bold mb-2">Phone:</label>
+                                <input type="tel" id="phone" name="phone" value="{{ patient.phone }}"
+                                       class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline transition-colors duration-200">
+                            </div>
+                            <div class="md:col-span-2">
+                                <label for="email" class="block text-gray-700 text-sm font-bold mb-2">Email:</label>
+                                <input type="email" id="email" name="email" value="{{ patient.email }}"
+                                       class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline transition-colors duration-200">
+                            </div>
+                        </div>
+                        <div class="flex items-center justify-end">
+                            <button type="submit" class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline transition-all duration-300 ease-in-out hover:scale-105 active:scale-95">
+                                Update Patient Details
+                            </button>
+                        </div>
+                    </form>
+                    {% else %}
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-gray-700 mb-6">
+                    <div><strong>First Name:</strong> {{ patient.first_name }}</div>
+                    <div><strong>Last Name:</strong> {{ patient.last_name }}</div>
+                    <div><strong>Date of Birth:</strong> {{ patient.dob }}</div>
+                    <div><strong>Gender:</strong> {{ patient.gender }}</div>
+                    <div class="md:col-span-2"><strong>Address:</strong> {{ patient.address }}</div>
+                    <div><strong>Phone:</strong> {{ patient.phone }}</div>
+                    <div><strong>Email:</strong> {{ patient.email }}</div>
+                </div>
+                {% endif %}
+                </div>
+
+                <!-- Medical Records Card -->
+                <div class="bg-white p-6 rounded-lg shadow-md transition-all duration-300 hover:shadow-lg">
+                    {% if session['user_role'] == 'doctor' %}
+                    <h3 class="text-2xl font-semibold text-[#2d5a2f] mb-6">Medical Records</h3>
+                    <h4 id="medical-record-form-title" class="text-xl font-medium text-[#3a86d7] mb-4">Add New Medical Record</h4>
+                    <form id="medicalRecordForm" method="POST" action="{{ url_for('view_patient', uhid=patient.uhid) }}" class="mb-8 p-6 border border-gray-200 rounded-md bg-gray-50">
+                        <input type="hidden" id="medical_record_id" name="medical_record_id">
+                     <!---   <input type="hidden" id="test_results_hidden" name="test_results">-->
+
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                            <div>
+                                <label for="visit_date" class="block text-gray-700 text-sm font-bold mb-2">Visit Date:</label>
+                                <input type="date" id="visit_date" name="visit_date" value="{{ today_date }}" required
+                                       class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline transition-colors duration-200">
+                            </div>
+                            <div class="md:col-span-2">
+                                <label for="diagnosis" class="block text-gray-700 text-sm font-bold mb-2">Diagnosis:</label>
+                                <textarea id="diagnosis" name="diagnosis" rows="2" required
+                                          class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline transition-colors duration-200"></textarea>
+                            </div>
+                            <div class="md:col-span-2">
+                                <label for="treatment" class="block text-gray-700 text-sm font-bold mb-2">Treatment:</label>
+                                <textarea id="treatment" name="treatment" rows="2" required
+                                          class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline transition-colors duration-200"></textarea>
+                            </div>
+                            
+                            {# --- Structured Test Results Input Fields (Doctor View) --- #}
+                            <div class="md:col-span-2 border p-4 rounded-md bg-white shadow-inner">
+                                <h5 class="text-lg font-semibold text-[#3a86d7] mb-3">Detailed Eye Exam Results:</h5>
+                                
+                                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                                    <h6 class="col-span-full text-md font-medium text-[#3a86d7] border-b pb-1 mb-2">Visual Acuity</h6>
+                                    <div>
+                                        <label class="block text-gray-700 text-sm mb-1">VA OD (Uncorrected):</label>
+                                        <input type="text" id="va_od" name="va_od" class="test-result-input shadow appearance-none border rounded w-full py-2 px-3 transition-colors duration-200" placeholder="e.g., 20/20">
+                                    </div>
+                                    <div>
+                                        <label class="block text-gray-700 text-sm mb-1">VA OS (Uncorrected):</label>
+                                        <input type="text" id="va_os" name="va_os" class="test-result-input shadow appearance-none border rounded w-full py-2 px-3 transition-colors duration-200" placeholder="e.g., 20/25">
+                                    </div>
+                                    <div>
+                                        <label class="block text-gray-700 text-sm mb-1">VA OD (Corrected):</label>
+                                        <input type="text" id="va_od_corrected" name="va_od_corrected" class="test-result-input shadow appearance-none border rounded w-full py-2 px-3 transition-colors duration-200" placeholder="e.g., 20/20">
+                                    </div>
+                                    <div>
+                                        <label class="block text-gray-700 text-sm mb-1">VA OS (Corrected):</label>
+                                        <input type="text" id="va_os_corrected" name="va_os_corrected" class="test-result-input shadow appearance-none border rounded w-full py-2 px-3 transition-colors duration-200" placeholder="e.g., 20/20">
+                                    </div>
+                                </div>
+
+                                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                                    <h6 class="col-span-full text-md font-medium text-[#3a86d7] border-b pb-1 mb-2">Intraocular Pressure</h6>
+                                    <div>
+                                        <label class="block text-gray-700 text-sm mb-1">IOP OD (mmHg):</label>
+                                        <input type="number" id="iop_od" name="iop_od" class="test-result-input shadow appearance-none border rounded w-full py-2 px-3 transition-colors duration-200" placeholder="e.g., 14" min="0" step="0.1">
+                                    </div>
+                                    <div>
+                                        <label class="block text-gray-700 text-sm mb-1">IOP OS (mmHg):</label>
+                                        <input type="number" id="iop_os" name="iop_os" class="test-result-input shadow appearance-none border rounded w-full py-2 px-3 transition-colors duration-200" placeholder="e.g., 16" min="0" step="0.1">
+                                    </div>
+                                </div>
+
+                                <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+                                    <h6 class="col-span-full text-md font-medium text-[#3a86d7] border-b pb-1 mb-2">Refraction OD</h6>
+                                    <div>
+                                        <label class="block text-gray-700 text-sm mb-1">Spherical:</label>
+                                        <input type="number" id="ref_od_sph" name="ref_od_sph" class="test-result-input shadow appearance-none border rounded w-full py-2 px-3 transition-colors duration-200" placeholder="-2.00" step="0.01">
+                                    </div>
+                                    <div>
+                                        <label class="block text-gray-700 text-sm mb-1">Cylindrical:</label>
+                                        <input type="number" id="ref_od_cyl" name="ref_od_cyl" class="test-result-input shadow appearance-none border rounded w-full py-2 px-3 transition-colors duration-200" placeholder="-0.75" step="0.01">
+                                    </div>
+                                    <div>
+                                        <label class="block text-gray-700 text-sm mb-1">Axis:</label>
+                                        <input type="number" id="ref_od_ax" name="ref_od_ax" class="test-result-input shadow appearance-none border rounded w-full py-2 px-3 transition-colors duration-200" placeholder="180" min="0" max="180" step="1">
+                                    </div>
+                                    <h6 class="col-span-full text-md font-medium text-[#3a86d7] border-b pb-1 mb-2 mt-4">Refraction OS</h6>
+                                    <div>
+                                        <label class="block text-gray-700 text-sm mb-1">Spherical:</label>
+                                        <input type="number" id="ref_os_sph" name="ref_os_sph" class="test-result-input shadow appearance-none border rounded w-full py-2 px-3 transition-colors duration-200" placeholder="-1.50" step="0.01">
+                                    </div>
+                                    <div>
+                                        <label class="block text-gray-700 text-sm mb-1">Cylindrical:</label>
+                                        <input type="number" id="ref_os_cyl" name="ref_os_cyl" class="test-result-input shadow appearance-none border rounded w-full py-2 px-3 transition-colors duration-200" placeholder="-0.50" step="0.01">
+                                    </div>
+                                    <div>
+                                        <label class="block text-gray-700 text-sm mb-1">Axis:</label>
+                                        <input type="number" id="ref_os_ax" name="ref_os_ax" class="test-result-input shadow appearance-none border rounded w-full py-2 px-3 transition-colors duration-200" placeholder="10" min="0" max="180" step="1">
+                                    </div>
+                                </div>
+
+                                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                                    <h6 class="col-span-full text-md font-medium text-[#3a86d7] border-b pb-1 mb-2">Slit Lamp Exam</h6>
+                                    <div>
+                                        <label class="block text-gray-700 text-sm mb-1">Cornea OD:</label>
+                                        <textarea id="sle_od_cornea" name="sle_od_cornea" class="test-result-input shadow appearance-none border rounded w-full py-2 px-3 transition-colors duration-200" rows="2" placeholder="e.g., Clear"></textarea>
+                                    </div>
+                                    <div>
+                                        <label class="block text-gray-700 text-sm mb-1">Cornea OS:</label>
+                                        <textarea id="sle_os_cornea" name="sle_os_cornea" class="test-result-input shadow appearance-none border rounded w-full py-2 px-3 transition-colors duration-200" rows="2" placeholder="e.g., Clear, no infiltrates"></textarea>
+                                    </div>
+                                    <div>
+                                        <label class="block text-gray-700 text-sm mb-1">Lens OD:</label>
+                                        <textarea id="sle_od_lens" name="sle_od_lens" class="test-result-input shadow appearance-none border rounded w-full py-2 px-3 transition-colors duration-200" rows="2" placeholder="e.g., Clear"></textarea>
+                                    </div>
+                                    <div>
+                                        <label class="block text-gray-700 text-sm mb-1">Lens OS:</label>
+                                        <textarea id="sle_os_lens" name="sle_os_lens" class="test-result-input shadow appearance-none border rounded w-full py-2 px-3 transition-colors duration-200" rows="2" placeholder="e.g., Early cortical cataract"></textarea>
+                                    </div>
+                                </div>
+
+                                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    <h6 class="col-span-full text-md font-medium text-[#3a86d7] border-b pb-1 mb-2">Fundus Exam</h6>
+                                    <div>
+                                        <label class="block text-gray-700 text-sm mb-1">Fundus OD:</label>
+                                        <textarea id="fundus_od" name="fundus_od" class="test-result-input shadow appearance-none border rounded w-full py-2 px-3 transition-colors duration-200" rows="2" placeholder="e.g., Healthy optic disc, clear macula"></textarea>
+                                    </div>
+                                    <div>
+                                        <label class="block text-gray-700 text-sm mb-1">Fundus OS:</label>
+                                        <textarea id="fundus_os" name="fundus_os" class="test-result-input shadow appearance-none border rounded w-full py-2 px-3 transition-colors duration-200" rows="2" placeholder="e.g., Few microaneurysms noted"></textarea>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="flex items-center justify-center space-x-4 mt-4 md:col-span-2">
+                                <button type="submit" name="submit_medical_record" id="submit-medical-record-btn"
+                                        class="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-6 rounded-md focus:outline-none focus:shadow-outline transition-all duration-300 ease-in-out hover:scale-105 active:scale-95">
+                                    Add Medical Record
+                                </button>
+                                <button type="button" id="cancel-edit-medical-record-btn"
+                                        class="bg-gray-400 hover:bg-gray-500 text-white font-bold py-2 px-6 rounded-md focus:outline-none focus:shadow-outline transition-all duration-300 ease-in-out hover:scale-105 active:scale-95 hidden">
+                                    Cancel Edit
+                                </button>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+            <!-- Right Column - 1/3 width on large screens -->
+            <div class="w-full lg:w-1/3">
+                <!-- DR Risk Assessment Card -->
+                <div class="bg-white p-6 rounded-lg shadow-md transition-all duration-300 hover:shadow-lg sticky top-6">
+                    <h3 class="text-2xl font-bold text-[#2d5a2f] mb-4">DR Risk Assessment</h3>
+
+                    <form id="dr-risk-form" class="space-y-4">
+                        <div>
+                            <label for="dr_duration_diabetes_years" class="block text-gray-700 text-sm font-bold mb-1">Duration of Diabetes (Years):</label>
+                            <input type="number" id="dr_duration_diabetes_years" name="duration_diabetes_years" class="shadow appearance-none border rounded-md w-full py-2 px-3 transition-colors duration-200" value="0" min="0" step="0.1">
+                        </div>
+                        <div>
+                            <label for="dr_hba1c" class="block text-gray-700 text-sm font-bold mb-1">HbA1c (%):</label>
+                            <input type="number" id="dr_hba1c" name="hba1c" class="shadow appearance-none border rounded-md w-full py-2 px-3 transition-colors duration-200" value="6.0" min="4" step="0.1">
+                        </div>
+                        <div>
+                            <label class="block text-gray-700 text-sm font-bold mb-1">Blood Pressure:</label>
+                            <div class="flex gap-2">
+                                <input type="number" id="dr_systolic_bp" name="systolic_bp" placeholder="Systolic" class="shadow appearance-none border rounded-md w-1/2 py-2 px-3 transition-colors duration-200" value="120" min="60">
+                                <input type="number" id="dr_diastolic_bp" name="diastolic_bp" placeholder="Diastolic" class="shadow appearance-none border rounded-md w-1/2 py-2 px-3 transition-colors duration-200" value="80" min="30">
+                            </div>
+                        </div>
+                        <div class="flex items-center">
+                            <input type="checkbox" id="dr_has_kidney_disease" name="has_kidney_disease" class="mr-2 transition-colors duration-200">
+                            <label for="dr_has_kidney_disease" class="text-gray-700">Has Kidney Disease?</label>
+                        </div>
+                        <div class="flex items-center">
+                            <input type="checkbox" id="dr_has_high_cholesterol" name="has_high_cholesterol" class="mr-2 transition-colors duration-200">
+                            <label for="dr_has_high_cholesterol" class="text-gray-700">Has High Cholesterol?</label>
+                        </div>
+                        <button type="button" id="assess-dr-risk"
+                                class="bg-purple-600 hover:bg-purple-700 text-white font-bold py-2 px-4 rounded-md focus:outline-none focus:shadow-outline transition-all duration-300 ease-in-out w-full hover:scale-105 active:scale-95">
+                            Assess Risk
+                        </button>
+                    </form>
+                    <div id="dr-risk-result" class="mt-4 p-3 rounded-md text-center hidden animate-fade-in">
+                        <p class="font-semibold text-lg" id="dr-risk-category"></p>
+                        <p class="text-sm text-gray-600" id="dr-risk-score"></p>
+                        <p class="text-xs text-gray-500 mt-2">Disclaimer: This is a simplified assessment, not a diagnosis.</p>
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- <script>
+        // Simple animation for the DR Risk Assessment
+        document.getElementById('assess-dr-risk').addEventListener('click', function() {
+            const resultDiv = document.getElementById('dr-risk-result');
+            const riskCategory = document.getElementById('dr-risk-category');
+            const riskScore = document.getElementById('dr-risk-score');
+            
+            // Hide result first if it's visible
+            resultDiv.classList.add('hidden');
+            
+            // Simulate calculation delay
+            setTimeout(() => {
+                // Show with animation
+                resultDiv.classList.remove('hidden');
+                resultDiv.classList.add('animate-fade-in');
+                
+                // Set results (this would be calculated based on form inputs in a real app)
+                riskCategory.textContent = 'Moderate Risk';
+                riskCategory.className = 'font-semibold text-lg text-yellow-600';
+                riskScore.textContent = 'Risk Score: 45%';
+            }, 500);
+        });
+
+        // Add hover effects to all interactive elements
+        document.querySelectorAll('button, a, input, select, textarea').forEach(element => {
+            element.addEventListener('mouseenter', function() {
+                this.style.transition = 'all 0.3s ease';
+            });
+        });
+    </script> -->
+</body>
+</html>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    console.log('patient_view.html: DOMContentLoaded fired.');
+
+    // ===== 2. Collect Test Results =====
+    function collectTestResults() {
+        const results = {};
+        
+        // Visual Acuity
+        const vaOd = document.getElementById('va_od')?.value.trim();
+        if (vaOd) results.VA_OD = vaOd;
+        const vaOs = document.getElementById('va_os')?.value.trim();
+        if (vaOs) results.VA_OS = vaOs;
+        const vaOdCorrected = document.getElementById('va_od_corrected')?.value.trim();
+        if (vaOdCorrected) results.VA_OD_with_correction = vaOdCorrected;
+        const vaOsCorrected = document.getElementById('va_os_corrected')?.value.trim();
+        if (vaOsCorrected) results.VA_OS_with_correction = vaOsCorrected;
+        
+        // Intraocular Pressure
+        const iopOd = document.getElementById('iop_od')?.value.trim();
+        if (iopOd) results.IOP_OD = parseFloat(iopOd);
+        const iopOs = document.getElementById('iop_os')?.value.trim();
+        if (iopOs) results.IOP_OS = parseFloat(iopOs);
+        
+        // Refraction OD
+        const refOdSph = document.getElementById('ref_od_sph')?.value.trim();
+        if (refOdSph) results.Refraction_OD_Sph = parseFloat(refOdSph);
+        const refOdCyl = document.getElementById('ref_od_cyl')?.value.trim();
+        if (refOdCyl) results.Refraction_OD_Cyl = parseFloat(refOdCyl);
+        const refOdAx = document.getElementById('ref_od_ax')?.value.trim();
+        if (refOdAx) results.Refraction_OD_Ax = parseInt(refOdAx);
+        
+        // Refraction OS
+        const refOsSph = document.getElementById('ref_os_sph')?.value.trim();
+        if (refOsSph) results.Refraction_OS_Sph = parseFloat(refOsSph);
+        const refOsCyl = document.getElementById('ref_os_cyl')?.value.trim();
+        if (refOsCyl) results.Refraction_OS_Cyl = parseFloat(refOsCyl);
+        const refOsAx = document.getElementById('ref_os_ax')?.value.trim();
+        if (refOsAx) results.Refraction_OS_Ax = parseInt(refOsAx);
+        
+        // Slit Lamp Exam
+        const sleOdCornea = document.getElementById('sle_od_cornea')?.value.trim();
+        if (sleOdCornea) results.SLE_OD_Cornea = sleOdCornea;
+        const sleOsCornea = document.getElementById('sle_os_cornea')?.value.trim();
+        if (sleOsCornea) results.SLE_OS_Cornea = sleOsCornea;
+        const sleOdLens = document.getElementById('sle_od_lens')?.value.trim();
+        if (sleOdLens) results.SLE_OD_Lens = sleOdLens;
+        const sleOsLens = document.getElementById('sle_os_lens')?.value.trim();
+        if (sleOsLens) results.SLE_OS_Lens = sleOsLens;
+        
+        // Fundus Exam
+        const fundusOd = document.getElementById('fundus_od')?.value.trim();
+        if (fundusOd) results.Fundus_OD = fundusOd;
+        const fundusOs = document.getElementById('fundus_os')?.value.trim();
+        if (fundusOs) results.Fundus_OS = fundusOs;
+        
+        console.log('All test results collected:', results);
+        return results;
+    }
+
+    // ===== 3. FIXED: Form Submission Handler =====
+    const medicalRecordForm = document.getElementById('medicalRecordForm');
+
+    if (medicalRecordForm) {
+        medicalRecordForm.addEventListener('submit', function(event) {
+            console.log('=== FORM SUBMISSION STARTED ===');
+            
+            // Collect all test data
+            const allTestResults = collectTestResults();
+            
+            // Find or create the test_results hidden input
+            let testResultsInput = document.querySelector('input[name="test_results"]');
+            if (!testResultsInput) {
+                console.log('Creating new test_results hidden input');
+                testResultsInput = document.createElement('input');
+                testResultsInput.type = 'hidden';
+                testResultsInput.name = 'test_results';
+                testResultsInput.id = 'test_results';
+                medicalRecordForm.appendChild(testResultsInput);
+            }
+            
+            // Set the value with the collected data
+            const jsonData = JSON.stringify(allTestResults);
+            testResultsInput.value = jsonData;
+            
+            console.log('test_results input value set to:', testResultsInput.value);
+            console.log('test_results input value length:', testResultsInput.value.length);
+            console.log('=== FORM SUBMISSION COMPLETE ===');
+        });
+    }
+
+    // ===== 4. Dynamic Field Management =====
+    
+    // Remove field utility function
+    window.removeField = function(button) {
+        button.parentElement.remove();
+    };
+
+
+    // ===== 9. Keep your existing DR Risk Assessment code (unchanged) =====
+    const assessDrRiskBtn = document.getElementById('assess-dr-risk');
+    const drRiskResultDiv = document.getElementById('dr-risk-result');
+    const drRiskCategorySpan = document.getElementById('dr-risk-category');
+    const drRiskScoreSpan = document.getElementById('dr-risk-score');
+
+    if (assessDrRiskBtn) {
+        console.log('DR Risk Assessment button found. Attaching event listener.');
+        assessDrRiskBtn.addEventListener('click', async function() {
+            console.log('DR Risk Assessment button clicked. Starting assessment logic...');
+            
+            const form = document.getElementById('dr-risk-form');
+            if (!form) {
+                console.error('Error: DR risk form not found!');
+                if (drRiskResultDiv) {
+                    drRiskResultDiv.classList.remove('hidden');
+                    drRiskResultDiv.className = 'mt-4 p-3 rounded-md text-center bg-red-100 text-red-800';
+                    drRiskCategorySpan.textContent = 'Setup Error!';
+                    drRiskScoreSpan.textContent = 'Form elements missing. See console.';
+                }
+                return;
+            }
+
+            const data = {
+                duration_diabetes_years: parseFloat(form.elements['duration_diabetes_years'].value || '0'),
+                hba1c: parseFloat(form.elements['hba1c'].value || '0'),
+                systolic_bp: parseFloat(form.elements['systolic_bp'].value || '0'),
+                diastolic_bp: parseFloat(form.elements['diastolic_bp'].value || '0'),
+                has_kidney_disease: form.elements['has_kidney_disease'].checked,
+                has_high_cholesterol: form.elements['has_high_cholesterol'].checked
+            };
+            console.log('DR data being sent:', data);
+
+            try {
+                const response = await fetch('/dr_risk_assessment', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(data)
+                });
+
+                const result = await response.json();
+                console.log('DR API Response received:', result);
+
+                if (response.ok) {
+                    if (drRiskResultDiv && drRiskCategorySpan && drRiskScoreSpan) {
+                        drRiskCategorySpan.textContent = `Risk Category: ${result.risk_category}`;
+                        drRiskScoreSpan.textContent = `Risk Score: ${result.risk_score}`;
+                        drRiskResultDiv.classList.remove('hidden');
+                        drRiskResultDiv.className = 'mt-4 p-3 rounded-md text-center';
+                        
+                        if (result.risk_category === 'High Risk') {
+                            drRiskResultDiv.classList.add('bg-red-100', 'text-red-800');
+                        } else if (result.risk_category === 'Medium Risk') {
+                            drRiskResultDiv.classList.add('bg-yellow-100', 'text-yellow-800');
+                        } else {
+                            drRiskResultDiv.classList.add('bg-green-100', 'text-green-800');
+                        }
+                        console.log('DR Risk result displayed.');
+                    } else {
+                        console.error('DR Risk result display elements not found.');
+                    }
+                } else {
+                    console.error('DR API Error Response (status ' + response.status + '):', result.error || response.statusText);
+                    if (drRiskResultDiv) {
+                        drRiskResultDiv.classList.remove('hidden');
+                        drRiskResultDiv.className = 'mt-4 p-3 rounded-md text-center bg-red-100 text-red-800';
+                        drRiskCategorySpan.textContent = 'Error during assessment!';
+                        drRiskScoreSpan.textContent = result.error || 'Please check console for details.';
+                    } else {
+                        console.error('Could not display DR risk error: result div not found.');
+                    }
+                }
+            } catch (error) {
+                console.error('DR Fetch error:', error);
+                if (drRiskResultDiv) {
+                    drRiskResultDiv.classList.remove('hidden');
+                    drRiskResultDiv.className = 'mt-4 p-3 rounded-md text-center bg-red-100 text-red-800';
+                    drRiskCategorySpan.textContent = 'Network Error!';
+                    drRiskScoreSpan.textContent = 'Could not reach server. See console.';
+                } else {
+                    console.error('Could not display DR network error: result div not found.');
+                }
+            }
+        });
+    } else {
+        console.log('DR Risk Assessment button NOT found on this page. Skipping DR setup.');
+    }
+
+    // ===== 10. Set initial date =====
+    const visitDateInput = document.getElementById('visit_date');
+    if (visitDateInput && !visitDateInput.value) {
+        visitDateInput.value = new Date().toISOString().slice(0, 10);
+    }
+
+    console.log('All prescription functions initialized successfully');
+});
+</script>
+{% endblock %} 

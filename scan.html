@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>DICOM Viewer</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100 flex items-center justify-center min-h-screen">
+    <div class="bg-white shadow-lg rounded-xl p-8 max-w-lg w-full">
+        <h1 class="text-xl font-bold mb-4 text-center">Scan Request Tester</h1>
+<form method="POST" class="space-y-4">
+    <!-- Department (readonly, but converted to uppercase anyway) -->
+    <input type="text" name="department" value="OPHTHAMOLOGY" 
+           class="w-full border p-2 rounded bg-gray-100 text-gray-500" readonly
+           oninput="this.value = this.value.toUpperCase()">
+
+    <!-- UHID -->
+    <input type="text" name="uhid" class="w-full border p-2 rounded" placeholder="UHID" required>
+    <!-- Dropdown for scan type -->
+    <select name="scan_type" class="w-full border p-2 rounded" required>
+        <option value="" disabled selected>Select Scan Type</option>
+        <option value="CT">CT</option>
+        <option value="MR">MR</option>
+        <option value="XRAY">XRAY</option>
+        <option value="US">ULTRASOUND</option>
+        <option value="PET">PET</option>
+        <!-- Add more types as needed -->
+    </select>
+
+    <!-- Body part input -->
+    <input type="text" name="body_part" id="body_part" 
+           class="w-full border p-2 rounded" placeholder="Body part (e.g., BRAIN, CHEST)" required
+           oninput="this.value = this.value.toUpperCase()">
+
+    <!-- Warning for correct spelling -->
+    <p class="text-sm text-green-500">⚠ Please enter the body part spelling correctly (e.g., BRAIN, CHEST)</p>
+
+    <!-- Submit button -->
+    <button type="submit" class="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600">Submit</button>
+</form>
+
+
+        {% if error %}
+        <div class="mt-6 p-4 bg-red-100 border rounded text-red-700">
+            <strong>Error:</strong> {{ error }}
+        </div>
+        {% endif %}
+
+        {% if dicom_file %}
+        <div class="mt-6">
+            <h2 class="font-semibold mb-2">Viewer:</h2>
+            <div id="dicomImage" class="border w-full h-96 bg-black"></div>
+        </div>
+
+        <!-- Using specific, compatible versions of the libraries -->
+        <script src="https://unpkg.com/cornerstone-core@2.3.0/dist/cornerstone.js"></script>
+        <script src="https://unpkg.com/dicom-parser@1.8.7/dist/dicomParser.js"></script>
+        <script src="https://unpkg.com/cornerstone-wado-image-loader@3.1.2/dist/cornerstoneWADOImageLoader.js"></script>
+        
+        <script>
+            // **FIX 1: Initialize the WADO Image Loader Web Worker**
+            // This is a required step to configure the library to parse DICOM files.
+            try {
+                cornerstoneWADOImageLoader.webWorkerManager.initialize({
+                    maxWebWorkers: navigator.hardwareConcurrency || 1,
+                    startWebWorkersOnDemand: true,
+                    taskConfiguration: {
+                        'decodeTask': {
+                            initializeCodecsOnStartup: false,
+                            usePDFJS: false,
+                            strict: false,
+                        }
+                    }
+                });
+            } catch (error) {
+                console.error("Web Worker initialization failed. This may happen if the page is reloaded.", error);
+            }
+
+            const element = document.getElementById('dicomImage');
+            cornerstone.enable(element);
+
+            // Link cornerstone with the WADO loader
+            cornerstoneWADOImageLoader.external.cornerstone = cornerstone;
+
+            // **FIX 2: Construct the image URL dynamically**
+            // This is more robust than a hardcoded URL.
+            const dicomFileName = "{{ dicom_file }}";
+            const imageId = `wadouri:${window.location.origin}/dicom/${dicomFileName}`;
+
+            console.log("Attempting to load DICOM image:", imageId);
+
+            // Load and display the image
+            cornerstone.loadAndCacheImage(imageId).then(function(image) {
+                console.log('Image loaded successfully:', image);
+                cornerstone.displayImage(element, image);
+            }).catch(function(err) {
+                console.error("Error loading DICOM image:", err);
+                element.innerHTML = `<div class="p-4 text-red-300">Failed to load DICOM image. Check browser console for details.</div>`;
+            });
+
+        </script>
+        {% endif %}
+    </div>
+</body>
+</html>
+

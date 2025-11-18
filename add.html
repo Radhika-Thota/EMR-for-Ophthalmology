@@ -1,0 +1,1190 @@
+{% extends 'layout.html' %}
+
+{% block content %}
+<style>
+    /* Main layout container */
+    .two-column-container {
+        display: flex;
+        gap: 1.5rem;
+        height: calc(100vh - 150px); /* Adjust based on your header height */
+        overflow: hidden;
+    }
+    
+    /* Left column - takes 2/3 of width and scrolls */
+    .left-column {
+        flex: 2;
+        overflow-y: auto;
+        padding-right: 1rem;
+    }
+    
+    /* Right column - takes 1/3 of width and stays sticky */
+    .right-column {
+        flex: 1;
+        position: sticky;
+        top: 0;
+        height: 100%;
+        overflow-y: auto;
+    }
+    
+    /* Custom scrollbar styling */
+    .left-column::-webkit-scrollbar,
+    .right-column::-webkit-scrollbar {
+        width: 8px;
+    }
+    
+    .left-column::-webkit-scrollbar-track,
+    .right-column::-webkit-scrollbar-track {
+        background: #f7fafc;
+        border-radius: 4px;
+    }
+    
+    .left-column::-webkit-scrollbar-thumb,
+    .right-column::-webkit-scrollbar-thumb {
+        background: #cbd5e0;
+        border-radius: 4px;
+    }
+    
+    .left-column::-webkit-scrollbar-thumb:hover,
+    .right-column::-webkit-scrollbar-thumb:hover {
+        background: #a0aec0;
+    }
+    
+    /* Ensure content spacing within columns */
+    .column-content {
+        padding-bottom: 2rem;
+    }
+    
+    /* Responsive design */
+    @media (max-width: 768px) {
+        .two-column-container {
+            flex-direction: column;
+            height: auto;
+        }
+        
+        .right-column {
+            position: static;
+            height: auto;
+        }
+    }
+</style>
+
+{# Main Patient Record Header #}
+<h2 class="text-3xl font-bold text-[#2d5a2f] mb-6">
+    Patient Record: {{ patient.first_name }} {{ patient.last_name }} (MRN: {{ patient.mrn }})
+</h2>
+<!-- FIX: Added the "Request Scan" button here with corrected URL and styling -->
+        {% if session['user_role'] == 'doctor' %}
+            <a href="{{ url_for('scan', uhid=patient.uhid) }}"
+               class="inline-block bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline transition-colors duration-200 mb-6">
+                Request Scan
+            </a>
+        {% endif %}
+
+{# START OF THE MAIN TWO-COLUMN LAYOUT CONTAINER #}
+<div class="two-column-container">
+    <div class="left-column">
+        <div class="space-y-8 bg-white p-6 rounded-lg shadow-md">
+            <div>
+                <h3 class="text-2xl font-semibold text-[#2d5a2f] mb-6">Patient Information</h3>
+                {# Patient details form is conditional based on user role #}
+                {% if session['user_role'] == 'doctor' %}
+                <form method="POST" action="{{ url_for('view_patient', patient_id=patient.id) }}">
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+                        <div class="md:col-span-2">
+            <label for="mrn" class="block text-gray-700 text-sm font-bold mb-2">MRN:</label>
+            <input type="text" id="mrn" name="mrn" value="{{ patient.mrn }}" readonly
+                   class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 bg-gray-100 leading-tight focus:outline-none focus:shadow-outline">
+        </div>
+                        <div>
+                            <label for="first_name" class="block text-gray-700 text-sm font-bold mb-2">First Name:</label>
+                            <input type="text" id="first_name" name="first_name" value="{{ patient.first_name }}"
+                                   class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline">
+                        </div>
+                        <div>
+                            <label for="last_name" class="block text-gray-700 text-sm font-bold mb-2">Last Name:</label>
+                            <input type="text" id="last_name" name="last_name" value="{{ patient.last_name }}"
+                                   class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline">
+                        </div>
+                        <div>
+                            <label for="dob" class="block text-gray-700 text-sm font-bold mb-2">Date of Birth:</label>
+                            <input type="date" id="dob" name="dob" value="{{ patient.dob }}"
+                                   class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline">
+                        </div>
+                        <div>
+                            <label for="gender" class="block text-gray-700 text-sm font-bold mb-2">Gender:</label>
+                            <select id="gender" name="gender"
+                                    class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline">
+                                <option value="Male" {% if patient.gender == 'Male' %}selected{% endif %}>Male</option>
+                                <option value="Female" {% if patient.gender == 'Female' %}selected{% endif %}>Female</option>
+                                <option value="Other" {% if patient.gender == 'Other' %}selected{% endif %}>Other</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label for="address" class="block text-gray-700 text-sm font-bold mb-2">Address:</label>
+                            <input type="text" id="address" name="address" value="{{ patient.address }}"
+                                   class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline">
+                        </div>
+                        <div>
+                            <label for="phone" class="block text-gray-700 text-sm font-bold mb-2">Phone:</label>
+                            <input type="tel" id="phone" name="phone" value="{{ patient.phone }}"
+                                   class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline">
+                        </div>
+                        <div class="md:col-span-2">
+                            <label for="email" class="block text-gray-700 text-sm font-bold mb-2">Email:</label>
+                            <input type="email" id="email" name="email" value="{{ patient.email }}"
+                                   class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline">
+                        </div>
+                    </div>
+                    <div class="flex items-center justify-end">
+                        <button type="submit" class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline">
+                            Update Patient Details
+                        </button>
+                    </div>
+                </form>
+                {% else %}
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-gray-700 mb-6">
+                    <div><strong>First Name:</strong> {{ patient.first_name }}</div>
+                    <div><strong>Last Name:</strong> {{ patient.last_name }}</div>
+                    <div><strong>Date of Birth:</strong> {{ patient.dob }}</div>
+                    <div><strong>Gender:</strong> {{ patient.gender }}</div>
+                    <div class="md:col-span-2"><strong>Address:</strong> {{ patient.address }}</div>
+                    <div><strong>Phone:</strong> {{ patient.phone }}</div>
+                    <div><strong>Email:</strong> {{ patient.email }}</div>
+                </div>
+                {% endif %}
+            </div>
+
+            <div class="bg-white p-6 rounded-lg shadow-xl">
+                
+
+                {% if session['user_role'] == 'doctor' %}
+                <h3 class="text-2xl font-semibold text-[#2d5a2f] mb-6">Medical Records</h3>
+                <h4 id="medical-record-form-title" class="text-xl font-medium text-[#3a86d7] mb-4">Add New Medical Record</h4>
+                <form id="medicalRecordForm" method="POST" action="{{ url_for('view_patient', patient_id=patient.id) }}" class="mb-8 p-6 border border-gray-200 rounded-md bg-gray-50">
+                    <input type="hidden" id="medical_record_id" name="medical_record_id">
+                    <input type="hidden" id="test_results_hidden" name="test_results">
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                        <div>
+                            <label for="visit_date" class="block text-gray-700 text-sm font-bold mb-2">Visit Date:</label>
+                            <input type="date" id="visit_date" name="visit_date" value="{{ today_date }}" required
+                                   class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline">
+                        </div>
+                        <div class="md:col-span-2">
+                            <label for="diagnosis" class="block text-gray-700 text-sm font-bold mb-2">Diagnosis:</label>
+                            <textarea id="diagnosis" name="diagnosis" rows="2" required
+                                      class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"></textarea>
+                        </div>
+                        <div class="md:col-span-2">
+                            <label for="treatment" class="block text-gray-700 text-sm font-bold mb-2">Treatment:</label>
+                            <textarea id="treatment" name="treatment" rows="2" required
+                                      class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"></textarea>
+                        </div>
+                        
+                        {# --- Structured Test Results Input Fields (Doctor View) --- #}
+                        <div class="md:col-span-2 border p-4 rounded-md bg-white shadow-inner">
+                            <h5 class="text-lg font-semibold text-[#3a86d7] mb-3">Detailed Eye Exam Results:</h5>
+                            
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                                <h6 class="col-span-full text-md font-medium text-[#3a86d7] border-b pb-1 mb-2">Visual Acuity</h6>
+                                <div>
+                                    <label class="block text-gray-700 text-sm mb-1">VA OD (Uncorrected):</label>
+                                    <input type="text" id="va_od" name="va_od" class="test-result-input shadow appearance-none border rounded w-full py-2 px-3" placeholder="e.g., 20/20">
+                                </div>
+                                <div>
+                                    <label class="block text-gray-700 text-sm mb-1">VA OS (Uncorrected):</label>
+                                    <input type="text" id="va_os" name="va_os" class="test-result-input shadow appearance-none border rounded w-full py-2 px-3" placeholder="e.g., 20/25">
+                                </div>
+                                <div>
+                                    <label class="block text-gray-700 text-sm mb-1">VA OD (Corrected):</label>
+                                    <input type="text" id="va_od_corrected" name="va_od_corrected" class="test-result-input shadow appearance-none border rounded w-full py-2 px-3" placeholder="e.g., 20/20">
+                                </div>
+                                <div>
+                                    <label class="block text-gray-700 text-sm mb-1">VA OS (Corrected):</label>
+                                    <input type="text" id="va_os_corrected" name="va_os_corrected" class="test-result-input shadow appearance-none border rounded w-full py-2 px-3" placeholder="e.g., 20/20">
+                                </div>
+                            </div>
+
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                                <h6 class="col-span-full text-md font-medium text-[#3a86d7] border-b pb-1 mb-2">Intraocular Pressure</h6>
+                                <div>
+                                    <label class="block text-gray-700 text-sm mb-1">IOP OD (mmHg):</label>
+                                    <input type="number" id="iop_od" name="iop_od" class="test-result-input shadow appearance-none border rounded w-full py-2 px-3" placeholder="e.g., 14" min="0" step="0.1">
+                                </div>
+                                <div>
+                                    <label class="block text-gray-700 text-sm mb-1">IOP OS (mmHg):</label>
+                                    <input type="number" id="iop_os" name="iop_os" class="test-result-input shadow appearance-none border rounded w-full py-2 px-3" placeholder="e.g., 16" min="0" step="0.1">
+                                </div>
+                            </div>
+
+                            <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+                                <h6 class="col-span-full text-md font-medium text-[#3a86d7] border-b pb-1 mb-2">Refraction OD</h6>
+                                <div>
+                                    <label class="block text-gray-700 text-sm mb-1">Spherical:</label>
+                                    <input type="number" id="ref_od_sph" name="ref_od_sph" class="test-result-input shadow appearance-none border rounded w-full py-2 px-3" placeholder="-2.00" step="0.01">
+                                </div>
+                                <div>
+                                    <label class="block text-gray-700 text-sm mb-1">Cylindrical:</label>
+                                    <input type="number" id="ref_od_cyl" name="ref_od_cyl" class="test-result-input shadow appearance-none border rounded w-full py-2 px-3" placeholder="-0.75" step="0.01">
+                                </div>
+                                <div>
+                                    <label class="block text-gray-700 text-sm mb-1">Axis:</label>
+                                    <input type="number" id="ref_od_ax" name="ref_od_ax" class="test-result-input shadow appearance-none border rounded w-full py-2 px-3" placeholder="180" min="0" max="180" step="1">
+                                </div>
+                                <h6 class="col-span-full text-md font-medium text-[#3a86d7] border-b pb-1 mb-2 mt-4">Refraction OS</h6>
+                                <div>
+                                    <label class="block text-gray-700 text-sm mb-1">Spherical:</label>
+                                    <input type="number" id="ref_os_sph" name="ref_os_sph" class="test-result-input shadow appearance-none border rounded w-full py-2 px-3" placeholder="-1.50" step="0.01">
+                                </div>
+                                <div>
+                                    <label class="block text-gray-700 text-sm mb-1">Cylindrical:</label>
+                                    <input type="number" id="ref_os_cyl" name="ref_os_cyl" class="test-result-input shadow appearance-none border rounded w-full py-2 px-3" placeholder="-0.50" step="0.01">
+                                </div>
+                                <div>
+                                    <label class="block text-gray-700 text-sm mb-1">Axis:</label>
+                                    <input type="number" id="ref_os_ax" name="ref_os_ax" class="test-result-input shadow appearance-none border rounded w-full py-2 px-3" placeholder="10" min="0" max="180" step="1">
+                                </div>
+                            </div>
+
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                                <h6 class="col-span-full text-md font-medium text-[#3a86d7] border-b pb-1 mb-2">Slit Lamp Exam</h6>
+                                <div>
+                                    <label class="block text-gray-700 text-sm mb-1">Cornea OD:</label>
+                                    <textarea id="sle_od_cornea" name="sle_od_cornea" class="test-result-input shadow appearance-none border rounded w-full py-2 px-3" rows="2" placeholder="e.g., Clear"></textarea>
+                                </div>
+                                <div>
+                                    <label class="block text-gray-700 text-sm mb-1">Cornea OS:</label>
+                                    <textarea id="sle_os_cornea" name="sle_os_cornea" class="test-result-input shadow appearance-none border rounded w-full py-2 px-3" rows="2" placeholder="e.g., Clear, no infiltrates"></textarea>
+                                </div>
+                                <div>
+                                    <label class="block text-gray-700 text-sm mb-1">Lens OD:</label>
+                                    <textarea id="sle_os_lens" name="sle_os_lens" class="test-result-input shadow appearance-none border rounded w-full py-2 px-3" rows="2" placeholder="e.g., Clear"></textarea>
+                                </div>
+                                <div>
+                                    <label class="block text-gray-700 text-sm mb-1">Lens OS:</label>
+                                    <textarea id="sle_os_lens" name="sle_os_lens" class="test-result-input shadow appearance-none border rounded w-full py-2 px-3" rows="2" placeholder="e.g., Early cortical cataract"></textarea>
+                                </div>
+                            </div>
+
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <h6 class="col-span-full text-md font-medium text-[#3a86d7] border-b pb-1 mb-2">Fundus Exam</h6>
+                                <div>
+                                    <label class="block text-gray-700 text-sm mb-1">Fundus OD:</label>
+                                    <textarea id="fundus_od" name="fundus_od" class="test-result-input shadow appearance-none border rounded w-full py-2 px-3" rows="2" placeholder="e.g., Healthy optic disc, clear macula"></textarea>
+                                </div>
+                                <div>
+                                    <label class="block text-gray-700 text-sm mb-1">Fundus OS:</label>
+                                    <textarea id="fundus_os" name="fundus_os" class="test-result-input shadow appearance-none border rounded w-full py-2 px-3" rows="2" placeholder="e.g., Few microaneurysms noted"></textarea>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="flex items-center justify-center space-x-4 mt-4">
+                            <button type="submit" name="submit_medical_record" id="submit-medical-record-btn"
+                                    class="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-6 rounded-md focus:outline-none focus:shadow-outline transition-colors duration-200">
+                                Add Medical Record
+                            </button>
+                             </form>
+                            <button type="button" id="cancel-edit-medical-record-btn"
+                                    class="bg-gray-400 hover:bg-gray-500 text-white font-bold py-2 px-6 rounded-md focus:outline-none focus:shadow-outline transition-colors duration-200 hidden">
+                                Cancel Edit
+                            </button>
+                        </div>
+                    
+
+                    <hr class="my-8 border-gray-300">
+                    {% else %}
+                    <p class="text-gray-600 italic">Only doctors can add/update medical records for patients.</p>
+                    <hr class="my-8 border-gray-300">
+                    {% endif %}
+
+                    
+                    {% if medical_records %}
+                        <div class="space-y-6">
+                            {% for record in medical_records %}
+                            <h3 class="text-2xl font-bold text-[#2d5a2f] mb-4">Medical Records</h3>
+                                <div class="bg-gray-50 p-4 rounded-lg shadow-sm border border-gray-200">
+                                    <div class="flex justify-between items-center mb-2">
+                                        <p class="font-semibold text-lg text-gray-800">Visit Date: {{ record[1] | default('N/A') }}</p>
+                                        {% if session['user_role'] == 'doctor' %}
+                                       
+                                        {% endif %}
+                                    </div>
+                                    <p class="text-gray-700 mb-2"><strong>Diagnosis:</strong> {{ record[2] | default('N/A') }}</p>
+                                    <p class="text-gray-700 mb-2"><strong>Treatment:</strong> {{ record[3] | default('N/A') }}</p>
+                                    
+                                    <div class="text-gray-700">
+                                        <strong>Test Results:</strong>
+                                        {% if record[4] and record[4].raw_text is defined %}
+                                            <div class="bg-red-50 p-3 rounded-md text-sm mt-1 border border-red-200">
+                                                <div class="font-semibold text-red-800 border-b border-red-200 pb-1 mb-2">Warning: Unstructured/Legacy Test Results</div>
+                                                <p class="text-red-700">{{ record[4].raw_text }}</p>
+                                            </div>
+                                        {% elif record[4] and record[4] is mapping and record[4]|length > 0 %}
+                                            {% set parsed_test_results = record[4] %}
+                                            <div class="bg-gray-100 p-3 rounded-md text-sm mt-1 space-y-2">
+                                                {% if parsed_test_results.VA_OD is defined or parsed_test_results.VA_OS is defined or parsed_test_results.VA_OD_with_correction is defined or parsed_test_results.VA_OS_with_correction is defined %}
+                                                <div class="font-semibold text-[#3a86d7] border-b border-gray-200 pb-1">Visual Acuity</div>
+                                                <div class="grid grid-cols-1 sm:grid-cols-2 gap-x-4">
+                                                    {% if parsed_test_results.VA_OD is defined %}<p><strong>VA OD:</strong> {{ parsed_test_results.VA_OD }}</p>{% endif %}
+                                                    {% if parsed_test_results.VA_OS is defined %}<p><strong>VA OS:</strong> {{ parsed_test_results.VA_OS }}</p>{% endif %}
+                                                    {% if parsed_test_results.VA_OD_with_correction is defined %}<p><strong>VA OD (c.c.):</strong> {{ parsed_test_results.VA_OD_with_correction }}</p>{% endif %}
+                                                    {% if parsed_test_results.VA_OS_with_correction is defined %}<p><strong>VA OS (c.c.):</strong> {{ parsed_test_results.VA_OS_with_correction }}</p>{% endif %}
+                                                </div>
+                                                {% endif %}
+
+                                                {% if parsed_test_results.IOP_OD is defined or parsed_test_results.IOP_OS is defined %}
+                                                <div class="font-semibold text-[#3a86d7] border-b border-gray-200 pb-1 pt-2">Intraocular Pressure</div>
+                                                <div class="grid grid-cols-1 sm:grid-cols-2 gap-x-4">
+                                                    {% if parsed_test_results.IOP_OD is defined %}<p><strong>IOP OD:</strong> {{ parsed_test_results.IOP_OD }} mmHg</p>{% endif %}
+                                                    {% if parsed_test_results.IOP_OS is defined %}<p><strong>IOP OS:</strong> {{ parsed_test_results.IOP_OS }} mmHg</p>{% endif %}
+                                                </div>
+                                                {% endif %}
+
+                                                {% if parsed_test_results.Refraction_OD_Sph is defined or parsed_test_results.Refraction_OD_Cyl is defined or parsed_test_results.Refraction_OD_Ax is defined or parsed_test_results.Refraction_OS_Sph is defined or parsed_test_results.Refraction_OS_Cyl is defined or parsed_test_results.Refraction_OS_Ax is defined %}
+                                                <div class="font-semibold text-[#3a86d7] border-b border-gray-200 pb-1 pt-2">Refraction</div>
+                                                <div class="grid grid-cols-1 sm:grid-cols-2 gap-x-4">
+                                                    {% if parsed_test_results.Refraction_OD_Sph is defined or parsed_test_results.Refraction_OD_Cyl is defined or parsed_test_results.Refraction_OD_Ax is defined %}
+                                                    <p><strong>OD:</strong> Sph {{ parsed_test_results.Refraction_OD_Sph | default('N/A') }}, Cyl {{ parsed_test_results.Refraction_OD_Cyl | default('N/A') }}, Ax {{ parsed_test_results.Refraction_OD_Ax | default('N/A') }}</p>
+                                                    {% endif %}
+                                                    {% if parsed_test_results.Refraction_OS_Sph is defined or parsed_test_results.Refraction_OS_Cyl is defined or parsed_test_results.Refraction_OS_Ax is defined %}
+                                                    <p><strong>OS:</strong> Sph {{ parsed_test_results.Refraction_OS_Sph | default('N/A') }}, Cyl {{ parsed_test_results.Refraction_OS_Cyl | default('N/A') }}, Ax {{ parsed_test_results.Refraction_OS_Ax | default('N/A') }}</p>
+                                                    {% endif %}
+                                                </div>
+                                                {% endif %}
+
+                                                {% if parsed_test_results.SLE_OD_Cornea is defined or parsed_test_results.SLE_OS_Cornea is defined or parsed_test_results.SLE_OD_Lens is defined or parsed_test_results.SLE_OS_Lens is defined %}
+                                                <div class="font-semibold text-[#3a86d7] border-b border-gray-200 pb-1 pt-2">Slit Lamp Exam</div>
+                                                <div class="grid grid-cols-1 sm:grid-cols-2 gap-x-4">
+                                                    {% if parsed_test_results.SLE_OD_Cornea is defined %}<p><strong>Cornea OD:</strong> {{ parsed_test_results.SLE_OD_Cornea }}</p>{% endif %}
+                                                    {% if parsed_test_results.SLE_OS_Cornea is defined %}<p><strong>Cornea OS:</strong> {{ parsed_test_results.SLE_OS_Cornea }}</p>{% endif %}
+                                                    {% if parsed_test_results.SLE_OD_Lens is defined %}<p><strong>Lens OD:</strong> {{ parsed_test_results.SLE_OD_Lens }}</p>{% endif %}
+                                                    {% if parsed_test_results.SLE_OS_Lens is defined %}<p><strong>Lens OS:</strong> {{ parsed_test_results.SLE_OS_Lens }}</p>{% endif %}
+                                                </div>
+                                                {% endif %}
+
+                                                {% if parsed_test_results.Fundus_OD is defined or parsed_test_results.Fundus_OS is defined %}
+                                                <div class="font-semibold text-[#3a86d7] border-b border-gray-200 pb-1 pt-2">Fundus Exam</div>
+                                                <div class="grid grid-cols-1 sm:grid-cols-2 gap-x-4">
+                                                    {% if parsed_test_results.Fundus_OD is defined %}<p><strong>Fundus OD:</strong> {{ parsed_test_results.Fundus_OD }}</p>{% endif %}
+                                                    {% if parsed_test_results.Fundus_OS is defined %}<p><strong>Fundus OS:</strong> {{ parsed_test_results.Fundus_OS }}</p>{% endif %}
+                                                </div>
+                                                {% endif %}
+                                                
+                                                {# New: Prescription Display #}
+                                                {% if parsed_test_results.prescription is defined and parsed_test_results.prescription is mapping and parsed_test_results.prescription|length > 0 %}
+                                                <div class="col-span-full font-semibold text-[#2d5a2f] border-t border-gray-200 pt-3 mt-3">Prescription</div>
+                                                    {% set prescription = parsed_test_results.prescription %}
+                                                    {% if prescription.drops is defined and prescription.drops|length > 0 %}
+                                                        <h6 class="col-span-full font-medium text-gray-800 mt-2">Drops:</h6>
+                                                        <ul class="list-disc list-inside ml-4">
+                                                        {% for drop in prescription.drops %}
+                                                            <li>{{ drop.name }} - {{ drop.frequency }} for {{ drop.duration }}</li>
+                                                        {% endfor %}
+                                                        </ul>
+                                                    {% endif %}
+                                                    {% if prescription.medications is defined and prescription.medications|length > 0 %}
+                                                        <h6 class="col-span-full font-medium text-gray-800 mt-2">Medications:</h6>
+                                                        <ul class="list-disc list-inside ml-4">
+                                                        {% for med in prescription.medications %}
+                                                            <li>{{ med.name }} - {{ med.dosage }} {{ med.frequency }} for {{ med.duration }}</li>
+                                                        {% endfor %}
+                                                        </ul>
+                                                    {% endif %}
+                                                    {% if prescription.surgeryRecommendation is defined and prescription.surgeryRecommendation %}
+                                                        <h6 class="col-span-full font-medium text-gray-800 mt-2">Surgery Recommendation:</h6>
+                                                        <p class="whitespace-pre-wrap">{{ prescription.surgeryRecommendation }}</p>
+                                                    {% endif %}
+                                                {% endif %}
+
+                                            </div>
+                                        {% else %} {# This case handles when record[4] is an empty dictionary {} from app.py #}
+                                            <p>No specific test results recorded.</p>
+                                        {% endif %}
+                                    </div>
+                                    {# Display Created and Edited dates #}
+                                    <div class="text-xs text-gray-500 mt-2">
+                                        <p>Recorded by User ID: {{ record[5] }}</p>
+                                        <p>Created: {{ record[6].strftime('%Y-%m-%d %H:%M:%S') }}</p>
+                                        {% if record[7] and record[7] != record[6] %} {# Only show 'Edited' if different from 'Created' #}
+                                            <p>Edited: {{ record[7].strftime('%Y-%m-%d %H:%M:%S') }}</p>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            {% endfor %}
+                        </div>
+                    {% else %}
+                    <p class="text-gray-600">No medical records found for this patient.</p>
+                    {% endif %}
+                </div>
+                <div class="column-content"></div> {# Adds padding at the bottom of content within the column #}
+            </div>
+        </div>
+    </div> <div class="right-column">
+        {% if session['user_role'] == 'doctor' %}
+<div class="bg-white p-6 rounded-lg shadow-md">
+    <h3 class="text-2xl font-bold text-[#2d5a2f] mb-4">DR Risk Assessment</h3>
+
+    <form id="dr-risk-form" class="space-y-4">
+        <div>
+            <label for="dr_duration_diabetes_years" class="block text-gray-700 text-sm font-bold mb-1">Duration of Diabetes (Years):</label>
+            <input type="number" id="dr_duration_diabetes_years" name="duration_diabetes_years" class="shadow appearance-none border rounded-md w-full py-2 px-3" value="0" min="0" step="0.1">
+        </div>
+        <div>
+            <label for="dr_hba1c" class="block text-gray-700 text-sm font-bold mb-1">HbA1c (%):</label>
+            <input type="number" id="dr_hba1c" name="hba1c" class="shadow appearance-none border rounded-md w-full py-2 px-3" value="6.0" min="4" step="0.1">
+        </div>
+        <div>
+            <label class="block text-gray-700 text-sm font-bold mb-1">Blood Pressure:</label>
+            <div class="flex gap-2">
+                <input type="number" id="dr_systolic_bp" name="systolic_bp" placeholder="Systolic" class="shadow appearance-none border rounded-md w-1/2 py-2 px-3" value="120" min="60">
+                <input type="number" id="dr_diastolic_bp" name="diastolic_bp" placeholder="Diastolic" class="shadow appearance-none border rounded-md w-1/2 py-2 px-3" value="80" min="30">
+            </div>
+        </div>
+        <div class="flex items-center">
+            <input type="checkbox" id="dr_has_kidney_disease" name="has_kidney_disease" class="mr-2">
+            <label for="dr_has_kidney_disease" class="text-gray-700">Has Kidney Disease?</label>
+        </div>
+        <div class="flex items-center">
+            <input type="checkbox" id="dr_has_high_cholesterol" name="has_high_cholesterol" class="mr-2">
+            <label for="dr_has_high_cholesterol" class="text-gray-700">Has High Cholesterol?</label>
+        </div>
+        <button type="button" id="assess-dr-risk"
+                class="bg-purple-600 hover:bg-purple-700 text-white font-bold py-2 px-4 rounded-md focus:outline-none focus:shadow-outline transition-colors duration-200 w-full">
+            Assess Risk
+        </button>
+    </form>
+    <div id="dr-risk-result" class="mt-4 p-3 rounded-md text-center hidden">
+        <p class="font-semibold text-lg" id="dr-risk-category"></p>
+        <p class="text-sm text-gray-600" id="dr-risk-score"></p>
+        <p class="text-xs text-gray-500 mt-2">Disclaimer: This is a simplified assessment, not a diagnosis.</p>
+    </div>
+</div>
+{% endif %}
+            {# New Prescription Section #}
+            <div class="bg-white p-6 rounded-lg shadow-md">
+                
+                {% if session['user_role'] == 'doctor' %}
+                <h3 class="text-2xl font-bold text-[#2d5a2f] mb-4">Prescription Management</h3>
+                    <button type="button" id="add-prescription-btn" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-md focus:outline-none focus:shadow-outline transition-colors duration-200 w-full mb-4">
+                        Add/Edit Prescription
+                    </button>
+
+                    <!-- Prescription Form (Hidden by default) -->
+                    <div id="prescription-form-container" class="border p-4 rounded-md bg-gray-50 hidden">
+                        <h4 class="text-lg font-semibold text-[#3a86d7] mb-3">Prescription Details:</h4>
+                        
+                        <div class="space-y-4 mb-4">
+                            <div>
+                                <input type="checkbox" id="prescribe-drops" class="mr-2">
+                                <label for="prescribe-drops" class="text-gray-700 font-semibold">Prescribe Drops</label>
+                                <div id="drops-fields" class="mt-2 space-y-2 pl-4 border-l border-gray-300 hidden">
+                                    <div class="flex items-center space-x-2">
+                                        <input type="text" name="drop_name[]" class="w-1/3 p-2 border rounded-md text-sm drop-name" placeholder="Drop Name">
+                                        <input type="text" name="drop_frequency[]" class="w-1/3 p-2 border rounded-md text-sm drop-frequency" placeholder="Frequency (e.g., BID)">
+                                        <input type="text" name="drop_duration[]" class="w-1/3 p-2 border rounded-md text-sm drop-duration" placeholder="Duration (e.g., 7 days)">
+                                    </div>
+                                    <button type="button" class="add-drop-btn bg-green-200 text-green-800 text-xs px-2 py-1 rounded-md hover:bg-green-300">Add Another Drop</button>
+                                </div>
+                            </div>
+
+                            <div>
+                                <input type="checkbox" id="prescribe-medication" class="mr-2">
+                                <label for="prescribe-medication" class="text-gray-700 font-semibold">Prescribe Oral Medication</label>
+                                <div id="medication-fields" class="mt-2 space-y-2 pl-4 border-l border-gray-300 hidden">
+                                    <div class="flex items-center space-x-2">
+                                        <input type="text" name="med_name[]" class="w-1/4 p-2 border rounded-md text-sm med-name" placeholder="Med Name">
+                                        <input type="text" name="med_dosage[]" class="w-1/4 p-2 border rounded-md text-sm med-dosage" placeholder="Dosage (e.g., 250mg)">
+                                        <input type="text" name="med_frequency[]" class="w-1/4 p-2 border rounded-md text-sm med-frequency" placeholder="Frequency (e.g., TID)">
+                                        <input type="text" name="med_duration[]" class="w-1/4 p-2 border rounded-md text-sm med-duration" placeholder="Duration (e.g., 10 days)">
+                                    </div>
+                                    <button type="button" class="add-medication-btn bg-green-200 text-green-800 text-xs px-2 py-1 rounded-md hover:bg-green-300">Add Another Medication</button>
+                                </div>
+                            </div>
+
+                            <div>
+                                <input type="checkbox" id="recommend-surgery" class="mr-2">
+                                <label for="recommend-surgery" class="text-gray-700 font-semibold">Surgery Recommendation</label>
+                                <div id="surgery-fields" class="mt-2 hidden">
+                                    <textarea id="surgery_recommendation_text"  name="surgery_recommendation_text" class="w-full p-2 border rounded-md text-sm" rows="3" placeholder="Enter surgery recommendation details..."></textarea>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="flex justify-end space-x-2">
+                            <button type="button" id="save-prescription-btn" class="bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded-md">
+                                Save Prescription
+                            </button>
+                            <button type="button" id="cancel-prescription-btn" class="bg-gray-400 hover:bg-gray-500 text-white font-bold py-2 px-4 rounded-md">
+                                Cancel
+                            </button>
+                        </div>
+                    </div>
+                   
+        
+                {% endif %}
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        console.log('patient_view.html: DOMContentLoaded fired.');
+
+        // --- DR Risk Assessment Logic ---
+        const assessDrRiskBtn = document.getElementById('assess-dr-risk');
+        const drRiskResultDiv = document.getElementById('dr-risk-result');
+        const drRiskCategorySpan = document.getElementById('dr-risk-category');
+        const drRiskScoreSpan = document.getElementById('dr-risk-score');
+
+        if (assessDrRiskBtn) {
+            console.log('DR Risk Assessment button found. Attaching event listener.');
+            assessDrRiskBtn.addEventListener('click', async function() {
+                console.log('DR Risk Assessment button clicked. Starting assessment logic...');
+                
+                const form = document.getElementById('dr-risk-form');
+                if (!form) {
+                    console.error('Error: DR risk form not found!');
+                    if (drRiskResultDiv) {
+                        drRiskResultDiv.classList.remove('hidden');
+                        drRiskResultDiv.className = 'mt-4 p-3 rounded-md text-center bg-red-100 text-red-800';
+                        drRiskCategorySpan.textContent = 'Setup Error!';
+                        drRiskScoreSpan.textContent = 'Form elements missing. See console.';
+                    }
+                    return;
+                }
+
+                const data = {
+                    duration_diabetes_years: parseFloat(form.elements['duration_diabetes_years'].value || '0'),
+                    hba1c: parseFloat(form.elements['hba1c'].value || '0'),
+                    systolic_bp: parseFloat(form.elements['systolic_bp'].value || '0'),
+                    diastolic_bp: parseFloat(form.elements['diastolic_bp'].value || '0'),
+                    has_kidney_disease: form.elements['has_kidney_disease'].checked,
+                    has_high_cholesterol: form.elements['has_high_cholesterol'].checked
+                };
+                console.log('DR data being sent:', data);
+
+                try {
+                    const response = await fetch('/dr_risk_assessment', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify(data)
+                    });
+
+                    const result = await response.json();
+                    console.log('DR API Response received:', result);
+
+                    if (response.ok) {
+                        if (drRiskResultDiv && drRiskCategorySpan && drRiskScoreSpan) {
+                            drRiskCategorySpan.textContent = `Risk Category: ${result.risk_category}`;
+                            drRiskScoreSpan.textContent = `Risk Score: ${result.risk_score}`;
+                            drRiskResultDiv.classList.remove('hidden');
+                            drRiskResultDiv.className = 'mt-4 p-3 rounded-md text-center';
+                            
+                            if (result.risk_category === 'High Risk') {
+                                drRiskResultDiv.classList.add('bg-red-100', 'text-red-800');
+                            } else if (result.risk_category === 'Medium Risk') {
+                                drRiskResultDiv.classList.add('bg-yellow-100', 'text-yellow-800');
+                            } else {
+                                drRiskResultDiv.classList.add('bg-green-100', 'text-green-800');
+                            }
+                            console.log('DR Risk result displayed.');
+                        } else {
+                            console.error('DR Risk result display elements not found.');
+                        }
+                    } else {
+                        console.error('DR API Error Response (status ' + response.status + '):', result.error || response.statusText);
+                        if (drRiskResultDiv) {
+                            drRiskResultDiv.classList.remove('hidden');
+                            drRiskResultDiv.className = 'mt-4 p-3 rounded-md text-center bg-red-100 text-red-800';
+                            drRiskCategorySpan.textContent = 'Error during assessment!';
+                            drRiskScoreSpan.textContent = result.error || 'Please check console for details.';
+                        } else {
+                            console.error('Could not display DR risk error: result div not found.');
+                        }
+                    }
+                } catch (error) {
+                    console.error('DR Fetch error:', error);
+                    if (drRiskResultDiv) {
+                        drRiskResultDiv.classList.remove('hidden');
+                        drRiskResultDiv.className = 'mt-4 p-3 rounded-md text-center bg-red-100 text-red-800';
+                        drRiskCategorySpan.textContent = 'Network Error!';
+                        drRiskScoreSpan.textContent = 'Could not reach server. See console.';
+                    } else {
+                        console.error('Could not display DR network error: result div not found.');
+                    }
+                }
+            });
+        } else {
+            console.log('DR Risk Assessment button NOT found on this page. Skipping DR setup.');
+        }
+
+        // --- Medical Record Add/Edit Form Handling ---
+        const medicalRecordForm = document.getElementById('medicalRecordForm');
+        const medicalRecordFormTitle = document.getElementById('medical-record-form-title');
+        const medicalRecordIdInput = document.getElementById('medical_record_id');
+        const submitMedicalRecordBtn = document.getElementById('submit-medical-record-btn');
+        const cancelEditMedicalRecordBtn = document.getElementById('cancel-edit-medical-record-btn');
+        const hiddenTestResultsInput = document.getElementById('test_results_hidden'); 
+
+        // Function to clear the medical record form and reset to "Add New" mode
+        function resetMedicalRecordForm() {
+            medicalRecordIdInput.value = '';
+            document.getElementById('visit_date').value = new Date().toISOString().slice(0,10); // Today's date
+            document.getElementById('diagnosis').value = '';
+            document.getElementById('treatment').value = '';
+
+            // Clear all structured test results inputs
+            document.getElementById('va_od').value = '';
+            document.getElementById('va_os').value = '';
+            document.getElementById('va_od_corrected').value = '';
+            document.getElementById('va_os_corrected').value = '';
+            document.getElementById('iop_od').value = '';
+            document.getElementById('iop_os').value = '';
+            document.getElementById('ref_od_sph').value = '';
+            document.getElementById('ref_od_cyl').value = '';
+            document.getElementById('ref_od_ax').value = '';
+            document.getElementById('ref_os_sph').value = '';
+            document.getElementById('ref_os_cyl').value = '';
+            document.getElementById('ref_os_ax').value = '';
+            document.getElementById('sle_od_cornea').value = '';
+            document.getElementById('sle_os_cornea').value = '';
+            document.getElementById('sle_od_lens').value = '';
+            document.getElementById('sle_os_lens').value = '';
+            document.getElementById('fundus_od').value = '';
+            document.getElementById('fundus_os').value = '';
+
+            // Clear prescription fields for main form reset
+            document.getElementById('prescribe-drops').checked = false;
+            document.getElementById('drops-fields').classList.add('hidden');
+            document.getElementById('drops-fields').querySelector('.drop-name').value = '';
+            document.getElementById('drops-fields').querySelector('.drop-frequency').value = '';
+            document.getElementById('drops-fields').querySelector('.drop-duration').value = '';
+            document.querySelectorAll('.drop-field-group').forEach(group => group.remove()); // Remove dynamically added
+
+            document.getElementById('prescribe-medication').checked = false;
+            document.getElementById('medication-fields').classList.add('hidden');
+            document.getElementById('medication-fields').querySelector('.med-name').value = '';
+            document.getElementById('medication-fields').querySelector('.med-dosage').value = '';
+            document.getElementById('medication-fields').querySelector('.med-frequency').value = '';
+            document.getElementById('medication-fields').querySelector('.med-duration').value = '';
+            document.querySelectorAll('.med-field-group').forEach(group => group.remove()); // Remove dynamically added
+
+            document.getElementById('recommend-surgery').checked = false;
+            document.getElementById('surgery-fields').classList.add('hidden');
+            document.getElementById('surgery_recommendation_text').value = '';
+
+
+            hiddenTestResultsInput.value = '{}'; // Reset hidden JSON to empty object
+            console.log('Form reset. Hidden test results JSON:', hiddenTestResultsInput.value);
+
+            medicalRecordFormTitle.textContent = 'Add New Medical Record';
+            submitMedicalRecordBtn.textContent = 'Add Medical Record';
+            cancelEditMedicalRecordBtn.classList.add('hidden');
+        }
+
+        // Function to populate structured test results fields from a parsed JSON object
+        function populateTestResultsFieldsFromObject(parsedResults) {
+            // Only attempt to populate if parsedResults is a valid object and not empty or a raw_text fallback
+            // The check below ensures it's a dictionary and doesn't contain the raw_text key
+            if (typeof parsedResults === 'object' && parsedResults !== null && Object.keys(parsedResults).length > 0 && 
+                !parsedResults.hasOwnProperty('raw_text') && !parsedResults.hasOwnProperty('raw_text_error_parsing')) {
+
+                document.getElementById('va_od').value = parsedResults.VA_OD || '';
+                document.getElementById('va_os').value = parsedResults.VA_OS || '';
+                document.getElementById('va_od_corrected').value = parsedResults.VA_OD_with_correction || '';
+                document.getElementById('va_os_corrected').value = parsedResults.VA_OS_with_correction || '';
+
+                document.getElementById('iop_od').value = parsedResults.IOP_OD || '';
+                document.getElementById('iop_os').value = parsedResults.IOP_OS || '';
+
+                document.getElementById('ref_od_sph').value = parsedResults.Refraction_OD_Sph || '';
+                document.getElementById('ref_od_cyl').value = parsedResults.Refraction_OD_Cyl || '';
+                document.getElementById('ref_od_ax').value = parsedResults.Refraction_OD_Ax || '';
+                document.getElementById('ref_os_sph').value = parsedResults.Refraction_OS_Sph || '';
+                document.getElementById('ref_os_cyl').value = parsedResults.Refraction_OS_Cyl || '';
+                document.getElementById('ref_os_ax').value = parsedResults.Refraction_OS_Ax || '';
+
+                document.getElementById('sle_od_cornea').value = parsedResults.SLE_OD_Cornea || '';
+                document.getElementById('sle_os_cornea').value = parsedResults.SLE_OS_Cornea || '';
+                document.getElementById('sle_od_lens').value = parsedResults.SLE_OD_Lens || '';
+                document.getElementById('sle_os_lens').value = parsedResults.SLE_OS_Lens || '';
+
+                document.getElementById('fundus_od').value = parsedResults.Fundus_OD || '';
+                document.getElementById('fundus_os').value = parsedResults.Fundus_OS || '';
+
+                // Populate prescription fields
+                const prescriptionData = parsedResults.prescription || {};
+                
+                // Reset dynamic fields before populating
+                document.querySelectorAll('.drop-field-group').forEach(group => group.remove());
+                document.querySelectorAll('.med-field-group').forEach(group => group.remove());
+                document.getElementById('drops-fields').querySelector('.drop-name').value = '';
+                document.getElementById('drops-fields').querySelector('.drop-frequency').value = '';
+                document.getElementById('drops-fields').querySelector('.drop-duration').value = '';
+                document.getElementById('medication-fields').querySelector('.med-name').value = '';
+                document.getElementById('medication-fields').querySelector('.med-dosage').value = '';
+                document.getElementById('medication-fields').querySelector('.med-frequency').value = '';
+                document.getElementById('medication-fields').querySelector('.med-duration').value = '';
+                document.getElementById('surgery_recommendation_text').value = '';
+
+
+                if (prescriptionData.drops && prescriptionData.drops.length > 0) {
+                    document.getElementById('prescribe-drops').checked = true;
+                    document.getElementById('drops-fields').classList.remove('hidden');
+                    prescriptionData.drops.forEach((drop, index) => {
+                        let dropContainer;
+                        if (index === 0) { // First set uses the default visible fields
+                            dropContainer = dropsFieldsContainer;
+                        } else { // Subsequent sets are new dynamic fields
+                            dropContainer = addDynamicDropField();
+                        }
+                        dropContainer.querySelector('.drop-name').value = drop.name || '';
+                        dropContainer.querySelector('.drop-frequency').value = drop.frequency || '';
+                        dropContainer.querySelector('.drop-duration').value = drop.duration || '';
+                    });
+                } else {
+                    document.getElementById('prescribe-drops').checked = false;
+                    document.getElementById('drops-fields').classList.add('hidden');
+                }
+
+                if (prescriptionData.medications && prescriptionData.medications.length > 0) {
+                    document.getElementById('prescribe-medication').checked = true;
+                    document.getElementById('medication-fields').classList.remove('hidden');
+                    prescriptionData.medications.forEach((med, index) => {
+                        let medContainer;
+                        if (index === 0) { // First set uses the default visible fields
+                            medContainer = medicationFieldsContainer;
+                        } else { // Subsequent sets are new dynamic fields
+                            medContainer = addDynamicMedicationField();
+                        }
+                        medContainer.querySelector('.med-name').value = med.name || '';
+                        medContainer.querySelector('.med-dosage').value = med.dosage || '';
+                        medContainer.querySelector('.med-frequency').value = med.frequency || '';
+                        medContainer.querySelector('.med-duration').value = med.duration || '';
+                    });
+                } else {
+                    document.getElementById('prescribe-medication').checked = false;
+                    document.getElementById('medication-fields').classList.add('hidden');
+                }
+
+                if (prescriptionData.surgeryRecommendation) {
+                    document.getElementById('recommend-surgery').checked = true;
+                    document.getElementById('surgery-fields').classList.remove('hidden');
+                    document.getElementById('surgery_recommendation_text').value = prescriptionData.surgeryRecommendation;
+                } else {
+                    document.getElementById('recommend-surgery').checked = false;
+                    document.getElementById('surgery-fields').classList.add('hidden');
+                }
+
+
+            } else if (parsedResults.hasOwnProperty('raw_text') || parsedResults.hasOwnProperty('raw_text_error_parsing')) {
+                console.warn("Attempted to populate structured fields with raw_text data. Fields will remain empty.");
+            }
+        }
+
+        // Event listener for "Edit" buttons on existing medical records (unchanged)
+        document.querySelectorAll('.edit-medical-record-btn').forEach(button => {
+            button.addEventListener('click', function() {
+                console.log('Edit button clicked.');
+                resetMedicalRecordForm(); // Always clear form before populating
+                
+                const recordId = this.dataset.recordId;
+                const visitDate = this.dataset.visitDate;
+                const diagnosis = this.dataset.diagnosis;
+                const treatment = this.dataset.treatment;
+                const testResultsJsonString = this.dataset.testResults; // Raw JSON string from data attribute
+
+                medicalRecordIdInput.value = recordId;
+                document.getElementById('visit_date').value = visitDate;
+                document.getElementById('diagnosis').value = diagnosis;
+                document.getElementById('treatment').value = treatment;
+
+                if (testResultsJsonString) {
+                    try {
+                        const parsedResults = JSON.parse(testResultsJsonString);
+                        let cleanResultsForPopulation = parsedResults;
+                        if (parsedResults.hasOwnProperty('raw_text') && typeof parsedResults.raw_text === 'string') {
+                            try {
+                                const innerParsed = JSON.parse(parsedResults.raw_text);
+                                if (typeof innerParsed === 'object' && innerParsed !== null) {
+                                    cleanResultsForPopulation = innerParsed;
+                                }
+                            } catch (e) {
+                                // Inner raw_text is not JSON, so keep outer structure for `raw_text` display
+                            }
+                        } else if (parsedResults.hasOwnProperty('raw_text_error_parsing') && typeof parsedResults.raw_text_error_parsing === 'string') {
+                            try {
+                                const innerParsed = JSON.parse(parsedResults.raw_text_error_parsing);
+                                if (typeof innerParsed === 'object' && innerParsed !== null) {
+                                    cleanResultsForPopulation = innerParsed;
+                                }
+                            } catch (e) {
+                                // Inner raw_text_error_parsing is not JSON
+                            }
+                        }
+
+                        populateTestResultsFieldsFromObject(cleanResultsForPopulation);
+                        hiddenTestResultsInput.value = JSON.stringify(cleanResultsForPopulation);
+
+                    } catch (e) {
+                        console.error('Error parsing testResultsJson from data attribute for edit form population:', e);
+                        hiddenTestResultsInput.value = JSON.stringify({"raw_text_error_parsing": testResultsJsonString});
+                    }
+                }
+
+                medicalRecordFormTitle.textContent = 'Edit Medical Record';
+                submitMedicalRecordBtn.textContent = 'Update Medical Record';
+                cancelEditMedicalRecordBtn.classList.remove('hidden');
+                
+                medicalRecordForm.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            });
+        });
+
+        // Event listener for "Cancel Edit" button
+        if (cancelEditMedicalRecordBtn) {
+            cancelEditMedicalRecordBtn.addEventListener('click', function() {
+                console.log('Cancel Edit button clicked.');
+                resetMedicalRecordForm();
+                medicalRecordForm.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            });
+        }
+
+        // Function to collect all test results and prescription data
+        function collectTestResults() {
+            const results = {};
+            
+            // Visual Acuity
+            const vaOd = document.getElementById('va_od').value.trim();
+            if (vaOd) results.VA_OD = vaOd;
+            const vaOs = document.getElementById('va_os').value.trim();
+            if (vaOs) results.VA_OS = vaOs;
+            const vaOdCorrected = document.getElementById('va_od_corrected').value.trim();
+            if (vaOdCorrected) results.VA_OD_with_correction = vaOdCorrected;
+            const vaOsCorrected = document.getElementById('va_os_corrected').value.trim();
+            if (vaOsCorrected) results.VA_OS_with_correction = vaOsCorrected;
+            
+            // Intraocular Pressure
+            const iopOd = document.getElementById('iop_od').value.trim();
+            if (iopOd) results.IOP_OD = iopOd;
+            const iopOs = document.getElementById('iop_os').value.trim();
+            if (iopOs) results.IOP_OS = iopOs;
+            
+            // Refraction OD
+            const refOdSph = document.getElementById('ref_od_sph').value.trim();
+            if (refOdSph) results.Refraction_OD_Sph = refOdSph;
+            const refOdCyl = document.getElementById('ref_od_cyl').value.trim();
+            if (refOdCyl) results.Refraction_OD_Cyl = refOdCyl;
+            const refOdAx = document.getElementById('ref_od_ax').value.trim();
+            if (refOdAx) results.Refraction_OD_Ax = refOdAx;
+            
+            // Refraction OS
+            const refOsSph = document.getElementById('ref_os_sph').value.trim();
+            if (refOsSph) results.Refraction_OS_Sph = refOsSph;
+            const refOsCyl = document.getElementById('ref_os_cyl').value.trim();
+            if (refOsCyl) results.Refraction_OS_Cyl = refOsCyl;
+            const refOsAx = document.getElementById('ref_os_ax').value.trim();
+            if (refOsAx) results.Refraction_OS_Ax = refOsAx;
+            
+            // Slit Lamp Exam
+            const sleOdCornea = document.getElementById('sle_od_cornea').value.trim();
+            if (sleOdCornea) results.SLE_OD_Cornea = sleOdCornea;
+            const sleOsCornea = document.getElementById('sle_os_cornea').value.trim();
+            if (sleOsCornea) results.SLE_OS_Cornea = sleOsCornea;
+            const sleOdLens = document.getElementById('sle_od_lens').value.trim();
+            if (sleOdLens) results.SLE_OD_Lens = sleOdLens;
+            const sleOsLens = document.getElementById('sle_os_lens').value.trim();
+            if (sleOsLens) results.SLE_OS_Lens = sleOsLens;
+            
+            // Fundus Exam
+            const fundusOd = document.getElementById('fundus_od').value.trim();
+            if (fundusOd) results.Fundus_OD = fundusOd;
+            const fundusOs = document.getElementById('fundus_os').value.trim();
+            if (fundusOs) results.Fundus_OS = fundusOs;
+            
+            // Collect Prescription Data
+            const prescriptionData = collectPrescriptionData();
+            if (Object.keys(prescriptionData).length > 0) {
+                results.prescription = prescriptionData;
+            }
+            
+            return results;
+        }
+
+        // Ensure this function is called when the form is submitted
+        if (medicalRecordForm) {
+            medicalRecordForm.addEventListener('submit', function(event) {
+                // Prevent default form submission
+                event.preventDefault();
+                
+                const collectedData = collectTestResults();
+                const isCollectedDataEmpty = Object.keys(collectedData).length === 0;
+
+                if (!isCollectedDataEmpty) {
+                    hiddenTestResultsInput.value = JSON.stringify(collectedData);
+                } else {
+                    hiddenTestResultsInput.value = '{}';
+                }
+                
+                console.log('Collected Test Results:', hiddenTestResultsInput.value);
+                
+                // Now submit the form programmatically
+                this.submit();
+            });
+        }
+
+        // --- New Prescription Logic ---
+        const addPrescriptionBtn = document.getElementById('add-prescription-btn');
+        const prescriptionFormContainer = document.getElementById('prescription-form-container');
+        const savePrescriptionBtn = document.getElementById('save-prescription-btn');
+        const cancelPrescriptionBtn = document.getElementById('cancel-prescription-btn');
+
+        const prescribeDropsCheckbox = document.getElementById('prescribe-drops');
+        const dropsFieldsContainer = document.getElementById('drops-fields');
+        const addDropBtn = dropsFieldsContainer.querySelector('.add-drop-btn');
+
+        const prescribeMedicationCheckbox = document.getElementById('prescribe-medication');
+        const medicationFieldsContainer = document.getElementById('medication-fields');
+        const addMedicationBtn = medicationFieldsContainer.querySelector('.add-medication-btn');
+
+        const recommendSurgeryCheckbox = document.getElementById('recommend-surgery');
+        const surgeryFieldsContainer = document.getElementById('surgery-fields');
+        const surgeryRecommendationTextarea = document.getElementById('surgery_recommendation_text');
+
+        // Toggle prescription form visibility
+        if (addPrescriptionBtn) {
+            addPrescriptionBtn.addEventListener('click', function() {
+                prescriptionFormContainer.classList.toggle('hidden');
+                // Scroll to the prescription form when shown
+                if (!prescriptionFormContainer.classList.contains('hidden')) {
+                    prescriptionFormContainer.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                }
+            });
+        }
+
+        // Toggle drops fields
+        if (prescribeDropsCheckbox) {
+            prescribeDropsCheckbox.addEventListener('change', function() {
+                if (this.checked) {
+                    dropsFieldsContainer.classList.remove('hidden');
+                } else {
+                    dropsFieldsContainer.classList.add('hidden');
+                    // Clear fields when unchecked
+                    dropsFieldsContainer.querySelector('.drop-name').value = '';
+                    dropsFieldsContainer.querySelector('.drop-frequency').value = '';
+                    dropsFieldsContainer.querySelector('.drop-duration').value = '';
+                    document.querySelectorAll('.drop-field-group').forEach(group => group.remove()); // Remove dynamically added
+
+                }
+            });
+        }
+
+        // Add dynamic drop field
+        if (addDropBtn) {
+            addDropBtn.addEventListener('click', addDynamicDropField);
+        }
+
+        function addDynamicDropField() {
+            const newGroup = document.createElement('div');
+            newGroup.className = 'flex items-center space-x-2 mt-2 drop-field-group'; // Added class for easy removal
+            newGroup.innerHTML = `
+                <input type="text" class="w-1/3 p-2 border rounded-md text-sm drop-name" placeholder="Drop Name">
+                <input type="text" class="w-1/3 p-2 border rounded-md text-sm drop-frequency" placeholder="Frequency">
+                <input type="text" class="w-1/3 p-2 border rounded-md text-sm drop-duration" placeholder="Duration">
+                <button type="button" class="remove-drop-btn text-red-600 hover:text-red-800">X</button>
+            `;
+            dropsFieldsContainer.appendChild(newGroup);
+
+            // Attach event listener to the new remove button
+            newGroup.querySelector('.remove-drop-btn').addEventListener('click', function() {
+                newGroup.remove();
+            });
+            return newGroup; // Return the new group for population during edit
+        }
+
+        // Toggle medication fields
+        if (prescribeMedicationCheckbox) {
+            prescribeMedicationCheckbox.addEventListener('change', function() {
+                if (this.checked) {
+                    medicationFieldsContainer.classList.remove('hidden');
+                } else {
+                    medicationFieldsContainer.classList.add('hidden');
+                    // Clear fields when unchecked
+                    medicationFieldsContainer.querySelector('.med-name').value = '';
+                    medicationFieldsContainer.querySelector('.med-dosage').value = '';
+                    medicationFieldsContainer.querySelector('.med-frequency').value = '';
+                    medicationFieldsContainer.querySelector('.med-duration').value = '';
+                    document.querySelectorAll('.med-field-group').forEach(group => group.remove()); // Remove dynamically added
+                }
+            });
+        }
+
+        // Add dynamic medication field
+        if (addMedicationBtn) {
+            addMedicationBtn.addEventListener('click', addDynamicMedicationField);
+        }
+
+        function addDynamicMedicationField() {
+            const newGroup = document.createElement('div');
+            newGroup.className = 'flex items-center space-x-2 mt-2 med-field-group'; // Added class for easy removal
+            newGroup.innerHTML = `
+                <input type="text" class="w-1/4 p-2 border rounded-md text-sm med-name" placeholder="Med Name">
+                <input type="text" class="w-1/4 p-2 border rounded-md text-sm med-dosage" placeholder="Dosage">
+                <input type="text" class="w-1/4 p-2 border rounded-md text-sm med-frequency" placeholder="Frequency">
+                <input type="text" class="w-1/4 p-2 border rounded-md text-sm med-duration" placeholder="Duration">
+                <button type="button" class="remove-med-btn text-red-600 hover:text-red-800">X</button>
+            `;
+            medicationFieldsContainer.appendChild(newGroup);
+
+            // Attach event listener to the new remove button
+            newGroup.querySelector('.remove-med-btn').addEventListener('click', function() {
+                newGroup.remove();
+            });
+            return newGroup; // Return the new group for population during edit
+        }
+
+
+        // Toggle surgery recommendation fields
+        if (recommendSurgeryCheckbox) {
+            recommendSurgeryCheckbox.addEventListener('change', function() {
+                if (this.checked) {
+                    surgeryFieldsContainer.classList.remove('hidden');
+                } else {
+                    surgeryFieldsContainer.classList.add('hidden');
+                    surgeryRecommendationTextarea.value = ''; // Clear field when unchecked
+                }
+            });
+        }
+
+        // Collect all prescription data
+        function collectPrescriptionData() {
+            const prescription = {};
+
+            if (prescribeDropsCheckbox.checked) {
+                const drops = [];
+                // Collect data from the initial fields
+                if (dropsFieldsContainer.querySelector('.drop-name').value.trim() ||
+                    dropsFieldsContainer.querySelector('.drop-frequency').value.trim() ||
+                    dropsFieldsContainer.querySelector('.drop-duration').value.trim()) {
+                    drops.push({
+                        name: dropsFieldsContainer.querySelector('.drop-name').value.trim(),
+                        frequency: dropsFieldsContainer.querySelector('.drop-frequency').value.trim(),
+                        duration: dropsFieldsContainer.querySelector('.drop-duration').value.trim()
+                    });
+                }
+                // Collect data from dynamically added fields
+                document.querySelectorAll('.drop-field-group').forEach(group => {
+                    if (group.querySelector('.drop-name').value.trim() ||
+                        group.querySelector('.drop-frequency').value.trim() ||
+                        group.querySelector('.drop-duration').value.trim()) {
+                        drops.push({
+                            name: group.querySelector('.drop-name').value.trim(),
+                            frequency: group.querySelector('.drop-frequency').value.trim(),
+                            duration: group.querySelector('.drop-duration').value.trim()
+                        });
+                    }
+                });
+                if (drops.length > 0) {
+                    prescription.drops = drops;
+                }
+            }
+
+            if (prescribeMedicationCheckbox.checked) {
+                const medications = [];
+                // Collect data from the initial fields
+                if (medicationFieldsContainer.querySelector('.med-name').value.trim() ||
+                    medicationFieldsContainer.querySelector('.med-dosage').value.trim() ||
+                    medicationFieldsContainer.querySelector('.med-frequency').value.trim() ||
+                    medicationFieldsContainer.querySelector('.med-duration').value.trim()) {
+                    medications.push({
+                        name: medicationFieldsContainer.querySelector('.med-name').value.trim(),
+                        dosage: medicationFieldsContainer.querySelector('.med-dosage').value.trim(),
+                        frequency: medicationFieldsContainer.querySelector('.med-frequency').value.trim(),
+                        duration: medicationFieldsContainer.querySelector('.med-duration').value.trim()
+                    });
+                }
+                // Collect data from dynamically added fields
+                document.querySelectorAll('.med-field-group').forEach(group => {
+                    if (group.querySelector('.med-name').value.trim() ||
+                        group.querySelector('.med-dosage').value.trim() ||
+                        group.querySelector('.med-frequency').value.trim() ||
+                        group.querySelector('.med-duration').value.trim()) {
+                        medications.push({
+                            name: group.querySelector('.med-name').value.trim(),
+                            dosage: group.querySelector('.med-dosage').value.trim(),
+                            frequency: group.querySelector('.med-frequency').value.trim(),
+                            duration: group.querySelector('.med-duration').value.trim()
+                        });
+                    }
+                });
+                if (medications.length > 0) {
+                    prescription.medications = medications;
+                }
+            }
+
+            if (recommendSurgeryCheckbox.checked && surgeryRecommendationTextarea.value.trim()) {
+                prescription.surgeryRecommendation = surgeryRecommendationTextarea.value.trim();
+            }
+            return prescription;
+        }
+
+        // Save Prescription Button Logic
+        if (savePrescriptionBtn) {
+            savePrescriptionBtn.addEventListener('click', function() {
+                // Collect prescription data
+                const prescriptionToSave = collectPrescriptionData();
+
+                // Get current medical record form data (including existing test results)
+                let currentMedicalRecordData = {};
+                try {
+                    currentMedicalRecordData = JSON.parse(hiddenTestResultsInput.value || '{}');
+                } catch (e) {
+                    console.error("Error parsing existing hidden test results JSON:", e);
+                    currentMedicalRecordData = {}; // Reset to empty if invalid
+                }
+                
+                // Add/update prescription to the current medical record data
+                if (Object.keys(prescriptionToSave).length > 0) {
+                    currentMedicalRecordData.prescription = prescriptionToSave;
+                } else {
+                    delete currentMedicalRecordData.prescription; // Remove if no prescription data
+                }
+
+                // Update the hidden test_results input with the combined data
+                hiddenTestResultsInput.value = JSON.stringify(currentMedicalRecordData);
+                console.log('Prescription data integrated into hidden test_results:', hiddenTestResultsInput.value);
+
+                // Hide the prescription form and clear its fields
+                prescriptionFormContainer.classList.add('hidden');
+                alert('Prescription data added to current medical record form. Click "Add/Update Medical Record" to save.');
+            });
+        }
+
+        // Cancel Prescription Button Logic
+        if (cancelPrescriptionBtn) {
+            cancelPrescriptionBtn.addEventListener('click', function() {
+                prescriptionFormContainer.classList.add('hidden');
+                // Reset fields of the prescription form only
+                document.getElementById('prescribe-drops').checked = false;
+                document.getElementById('drops-fields').classList.add('hidden');
+                document.getElementById('drops-fields').querySelector('.drop-name').value = '';
+                document.getElementById('drops-fields').querySelector('.drop-frequency').value = '';
+                document.getElementById('drops-fields').querySelector('.drop-duration').value = '';
+                document.querySelectorAll('.drop-field-group').forEach(group => group.remove());
+
+                document.getElementById('prescribe-medication').checked = false;
+                document.getElementById('medication-fields').classList.add('hidden');
+                document.getElementById('medication-fields').querySelector('.med-name').value = '';
+                document.getElementById('medication-fields').querySelector('.med-dosage').value = '';
+                document.getElementById('medication-fields').querySelector('.med-frequency').value = '';
+                document.getElementById('medication-fields').querySelector('.med-duration').value = '';
+                document.querySelectorAll('.med-field-group').forEach(group => group.remove());
+
+                document.getElementById('recommend-surgery').checked = false;
+                document.getElementById('surgery-fields').classList.add('hidden');
+                document.getElementById('surgery_recommendation_text').value = '';
+            });
+        }
+    });
+</script>
+
+{% endblock %}                

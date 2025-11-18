@@ -1,0 +1,250 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ title | default('Ophthalmology EMR') }}</title>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        body{
+            margin-right: 0%;
+        }
+        :root {
+            --primary: #3498db;
+            --primary-dark: #2980b9;
+            --secondary: #2ecc71;
+            --accent: #e74c3c;
+            --light-bg: #f8fafc;
+            --dark-text: #2c3e50;
+            --light-text: #7f8c8d;
+        }
+        
+        body {
+            font-family: 'Poppins', sans-serif;
+            background: linear-gradient(135deg, #f5f7fa 0%, #e4efe9 100%);
+            color: var(--dark-text);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .nav-gradient {
+            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+        }
+
+        .logo {
+            font-weight: 700;
+            background: linear-gradient(to right, #ffffff, #e0f7fa);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            letter-spacing: 1px;
+        }
+
+        .nav-link {
+            position: relative;
+            padding: 0.5rem 0;
+            margin: 0 0.75rem;
+            transition: all 0.3s ease;
+        }
+
+        .nav-link::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 0;
+            height: 2px;
+            background: white;
+            transition: width 0.3s ease;
+        }
+
+        .nav-link:hover::after {
+            width: 100%;
+        }
+
+        .btn-primary {
+            background: linear-gradient(to right, var(--primary), var(--primary-dark));
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 10px rgba(52, 152, 219, 0.3);
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 15px rgba(52, 152, 219, 0.4);
+        }
+
+        .main-container {
+            background: rgba(255, 255, 255, 0.9);
+            border-radius: 12px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.05);
+            backdrop-filter: blur(10px);
+        }
+
+        .floating-element {
+            position: absolute;
+            border-radius: 50%;
+            opacity: 0.1;
+            animation: float 15s infinite linear;
+            z-index: -1;
+        }
+
+        .element-1 {
+            width: 150px;
+            height: 150px;
+            background: var(--primary);
+            top: 10%;
+            right: 10%;
+            animation-delay: 0s;
+            animation-duration: 20s;
+        }
+
+        .element-2 {
+            width: 100px;
+            height: 100px;
+            background: var(--secondary);
+            bottom: 15%;
+            left: 5%;
+            animation-delay: -5s;
+            animation-duration: 25s;
+        }
+
+        .flash-message {
+            border-left: 4px solid;
+            animation: slideIn 0.5s ease-out;
+        }
+
+        .flash-success {
+            border-left-color: var(--secondary);
+            background: rgba(46, 204, 113, 0.1);
+        }
+
+        .flash-danger {
+            border-left-color: var(--accent);
+            background: rgba(231, 76, 60, 0.1);
+        }
+
+        .flash-warning {
+            border-left-color: #f39c12;
+            background: rgba(243, 156, 18, 0.1);
+        }
+
+        .flash-info {
+            border-left-color: var(--primary);
+            background: rgba(52, 152, 219, 0.1);
+        }
+
+        @keyframes float {
+            0% {
+                transform: translate(0, 0) rotate(0deg);
+            }
+            25% {
+                transform: translate(20px, 20px) rotate(90deg);
+            }
+            50% {
+                transform: translate(0, 40px) rotate(180deg);
+            }
+            75% {
+                transform: translate(-20px, 20px) rotate(270deg);
+            }
+            100% {
+                transform: translate(0, 0) rotate(360deg);
+            }
+        }
+
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateX(-20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
+
+        @media (max-width: 768px) {
+            .nav-link {
+                margin: 0 0.5rem;
+                font-size: 0.9rem;
+            }
+            
+            .user-info {
+                display: none;
+            }
+        }
+    </style>
+</head>
+<body class="antialiased" data-current-username="{{ session['username'] if session.get('username') else '' }}">
+    <!-- Floating background elements -->
+    <div class="floating-element element-1"></div>
+    <div class="floating-element element-2"></div>
+
+    <nav class="nav-gradient p-4 text-white shadow-lg">
+        <div class="container mx-auto flex justify-between items-center">
+            <a href="{{ url_for('dashboard') }}" class="text-2xl font-bold tracking-wide logo">OphthaEMR</a>
+            <div class="flex items-center space-x-4">
+                {# Display user info and navigation ONLY if user is logged in #}
+                {% if session.get('user_id') %}
+                    <span class="text-blue-100 user-info hidden md:inline">Logged in as: {{ session['username'] }} ({{ session['user_role'] | title }})</span>
+                    {# Show specific links if not admin OR if admin and on admin panel (to prevent showing patient links) #}
+                    {% if session['user_role'] != 'admin' %}
+                        <a href="{{ url_for('dashboard') }}" class="nav-link hover:text-blue-200">Dashboard</a>
+                        <a href="{{ url_for('analytics') }}" class="nav-link hover:text-blue-200">Analytics</a>
+                    {% endif %}
+                    <a href="{{ url_for('logout') }}" class="btn-primary text-white py-2 px-4 rounded-md">Logout</a>
+                {% else %}
+                    {# Show login button if no user is logged in #}
+                    <a href="{{ url_for('login') }}" class="btn-primary text-white py-2 px-4 rounded-md">Login</a>
+                {% endif %}
+            </div>
+        </div>
+    </nav>
+
+    <div class="container mx-auto p-4 mt-4 flex-grow">
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                <div class="mb-6 space-y-3">
+                    {% for category, message in messages %}
+                        <div class="p-4 rounded-md flash-message {% if category == 'success' %}flash-success{% elif category == 'danger' %}flash-danger{% elif category == 'warning' %}flash-warning{% else %}flash-info{% endif %}">
+                            {{ message }}
+                        </div>
+                    {% endfor %}
+                </div>
+            {% endif %}
+        {% endwith %}
+
+        <div class="main-container p-6">
+            {% block content %}{% endblock %}
+        </div>
+    </div>
+
+    
+
+    <script>
+        // Simple animation for page elements
+        document.addEventListener('DOMContentLoaded', function() {
+            // Animate the main container
+            gsap.from('.main-container', {
+                duration: 0.8,
+                y: 20,
+                opacity: 0,
+                ease: "power2.out"
+            });
+            
+            // Animate flash messages if they exist
+            gsap.from('.flash-message', {
+                duration: 0.5,
+                x: -20,
+                opacity: 0,
+                stagger: 0.1,
+                ease: "power2.out"
+            });
+        });
+    </script>
+</body>
+</html>

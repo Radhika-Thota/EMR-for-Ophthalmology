@@ -1,0 +1,196 @@
+{% extends 'layout.html' %}
+{% block content %}
+
+<div class="max-w-4xl mx-auto py-8">
+    <h1 class="text-3xl font-extrabold text-gray-900 mb-6">
+        Prescription for: {{ patient.name }} ({{ patient.uhid }})
+    </h1>
+
+    <form method="POST" action="{{ url_for('prescription_page', uhid=patient.uhid) }}" class="space-y-8">
+        <div>
+                                <label for="visit_date" class="block text-gray-700 text-sm font-bold mb-2">Visit Date:</label>
+                                <input type="date" id="visit_date" name="visit_date" value="{{ today_date }}" required
+                                       class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline transition-colors duration-200">
+                            </div>
+        <div class="bg-white p-6 rounded-xl shadow-lg border border-gray-200">
+            <h2 class="text-2xl font-semibold text-blue-700 mb-4">1. Spectacle & Lens Prescription</h2>
+            <div class="overflow-x-auto">
+                <table class="min-w-full divide-y divide-gray-300">
+                    <thead class="bg-gray-50">
+                        <tr>
+                            <th class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Eye</th>
+                            <th class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">SPH</th>
+                            <th class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">CYL</th>
+                            <th class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">AXIS</th>
+                            <th class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">ADD</th>
+                            <th class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Prism</th>
+                            <th class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">VA</th>
+                        </tr>
+                    </thead>
+                    <tbody class="bg-white divide-y divide-gray-200">
+                        <!-- OD (Right Eye) -->
+                        <tr>
+                            <td class="px-3 py-2 whitespace-nowrap text-sm font-medium text-gray-900">OD(Right)</td>
+                            <td class="px-3 py-2"><input type="text" name="spectacle_od_sph" class="w-full border-gray-300 rounded-md p-1 text-sm" placeholder="+1.00"></td>
+                            <td class="px-3 py-2"><input type="text" name="spectacle_od_cyl" class="w-full border-gray-300 rounded-md p-1 text-sm" placeholder="-0.50"></td>
+                            <td class="px-3 py-2"><input type="number" name="spectacle_od_axis" class="w-full border-gray-300 rounded-md p-1 text-sm" placeholder="90"></td>
+                            <td class="px-3 py-2"><input type="text" name="spectacle_od_add" class="w-full border-gray-300 rounded-md p-1 text-sm" placeholder="+2.50"></td>
+                            <td class="px-3 py-2"><input type="text" name="spectacle_od_prism" class="w-full border-gray-300 rounded-md p-1 text-sm" placeholder="1 Base Up"></td>
+                            <td class="px-3 py-2"><input type="text" name="spectacle_od_va" class="w-full border-gray-300 rounded-md p-1 text-sm" placeholder="6/6"></td>
+                        </tr>
+                        <!-- OS (Left Eye) -->
+                        <tr>
+                            <td class="px-3 py-2 whitespace-nowrap text-sm font-medium text-gray-900">OS(Left)</td>
+                            <td class="px-3 py-2"><input type="text" name="spectacle_os_sph" class="w-full border-gray-300 rounded-md p-1 text-sm" placeholder="+0.75"></td>
+                            <td class="px-3 py-2"><input type="text" name="spectacle_os_cyl" class="w-full border-gray-300 rounded-md p-1 text-sm" placeholder="-0.25"></td>
+                            <td class="px-3 py-2"><input type="number" name="spectacle_os_axis" class="w-full border-gray-300 rounded-md p-1 text-sm" placeholder="180"></td>
+                            <td class="px-3 py-2"><input type="text" name="spectacle_os_add" class="w-full border-gray-300 rounded-md p-1 text-sm" placeholder="+2.50"></td>
+                            <td class="px-3 py-2"><input type="text" name="spectacle_os_prism" class="w-full border-gray-300 rounded-md p-1 text-sm" placeholder="1 Base Down"></td>
+                            <td class="px-3 py-2"><input type="text" name="spectacle_os_va" class="w-full border-gray-300 rounded-md p-1 text-sm" placeholder="6/6"></td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="mt-4">
+                <label class="block">
+                    <span class="text-gray-700">Lens Type:</span>
+                    <select name="lens_type" class="w-full border-gray-300 rounded-md p-2">
+                        <option value="">Select Lens Type</option>
+                        <option value="Single Vision">Single Vision</option>
+                        <option value="Bifocal">Bifocal</option>
+                        <option value="Progressive">Progressive</option>
+                        <option value="Safety">Safety</option>
+                    </select>
+                </label>
+            </div>
+        </div>
+
+        <div class="bg-white p-6 rounded-xl shadow-lg border border-gray-200">
+            <h2 class="text-2xl font-semibold text-green-700 mb-4 flex justify-between items-center">
+                <span>2. Medication / Eye Drop Prescription</span>
+                <button type="button" onclick="addMedicationRow()" class="text-base bg-green-500 hover:bg-green-600 text-white py-1 px-3 rounded-md shadow transition duration-150">
+                    + Add Medication
+                </button>
+            </h2>
+
+            <div id="medication-list" class="space-y-4">
+                <!-- Initial Medication Row -->
+                <div class="medication-row p-3 border rounded-lg bg-green-50 flex items-center space-x-2" data-index="1">
+                    <input type="text" name="medication_name_1" class="flex-1 border-gray-300 rounded-md p-2 text-sm" placeholder="Drug Name / Eye Drop">
+                    <input type="text" name="medication_dose_1" class="w-24 border-gray-300 rounded-md p-2 text-sm" placeholder="Dose (e.g., 1 drop)">
+                    <input type="text" name="medication_frequency_1" class="w-32 border-gray-300 rounded-md p-2 text-sm" placeholder="Frequency (e.g., TID)">
+                    <select name="medication_eye_1" class="w-24 border-gray-300 rounded-md p-2 text-sm">
+                        <option value="OU">OU</option>
+                        <option value="OD">OD</option>
+                        <option value="OS">OS</option>
+                    </select>
+                    <input type="number" name="medication_duration_value_1" class="w-24 border-gray-300 rounded-md p-2 text-sm" placeholder="Duration">
+                    <select name="medication_duration_unit_1" class="w-24 border-gray-300 rounded-md p-2 text-sm">
+                        <option value="Days">Days</option>
+                        <option value="Weeks">Weeks</option>
+                        <option value="Months">Months</option>
+                    </select>
+                    <button type="button" onclick="removeMedicationRow(this)" class="text-red-500 hover:text-red-700 text-lg font-bold">&times;</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="bg-white p-6 rounded-xl shadow-lg border border-gray-200">
+            <h2 class="text-2xl font-semibold text-red-700 mb-4">3. Systemic Medication & Surgery Notes</h2>
+            <label class="block">
+                <span class="text-gray-700">Systemic Medication / Treatment (if any):</span>
+                <textarea name="systemic_medication" rows="2" class="w-full border-gray-300 rounded-md p-2" placeholder="e.g., Refer to Physician for BP management. Start Metformin 500mg BID."></textarea>
+            </label>
+
+            <div class="mt-4">
+                <label class="block">
+                    <span class="text-gray-700">Surgery Recommended:</span>
+                    <textarea name="surgery_recommendation" rows="2" class="w-full border-gray-300 rounded-md p-2" placeholder="e.g., Cataract surgery advised for OD. Clear consent obtained."></textarea>
+                </label>
+            </div>
+            
+            <div class="mt-4">
+                <label class="block">
+                    <span class="text-gray-700">IOL Power / Pre-op Notes (if applicable):</span>
+                    <textarea name="iol_notes" rows="3" class="w-full border-gray-300 rounded-md p-2" placeholder="e.g., IOL: Toric, Power: +20.50D, Target: Plano"></textarea>
+                </label>
+            </div>
+        </div>
+        
+        <div class="bg-white p-6 rounded-xl shadow-lg border border-gray-200">
+            <h2 class="text-2xl font-semibold text-purple-700 mb-4">4. Patient Instructions & Follow-up</h2>
+            <label class="block">
+                <span class="text-gray-700">Patient Instructions/Warnings (Printed on Rx):</span>
+                <textarea name="patient_instructions" rows="2" class="w-full border-gray-300 rounded-md p-2" placeholder="e.g., Do not rub eyes. Wear dark glasses. Follow-up 1 week."></textarea>
+            </label>
+
+            <div class="mt-4">
+                <label class="block">
+                    <span class="text-gray-700">Recommended Follow-up Date:</span>
+                    <input type="date" name="follow_up_date" class="w-full border-gray-300 rounded-md p-2">
+                </label>
+            </div>
+        </div>
+
+        <div class="flex justify-end space-x-4">
+            <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-6 rounded-lg shadow-xl transition duration-150">
+                Finalize & Save Prescription
+            </button>
+            <button type="button" 
+               onclick="window.history.back();"
+               class="bg-gray-500 hover:bg-gray-600 text-white font-bold py-3 px-6 rounded-lg shadow-xl transition duration-150 flex items-center">
+                Cancel / Back to Patient View
+            </button>
+        </div>
+    </form>
+</div>
+
+<script>
+    let medicationIndex = 1;
+
+    // Sets up the medication list counter based on initial HTML content
+    document.addEventListener('DOMContentLoaded', () => {
+        const rows = document.querySelectorAll('.medication-row');
+        if (rows.length > 0) {
+            // Find the highest data-index and set the global index one higher
+            medicationIndex = Math.max(...Array.from(rows).map(row => parseInt(row.dataset.index))) + 1;
+        } else {
+            // If the list is empty (shouldn't be based on HTML above), start at 1
+            medicationIndex = 1;
+        }
+    });
+
+    function addMedicationRow() {
+        medicationIndex++;
+        const list = document.getElementById('medication-list');
+        const newRow = document.createElement('div');
+        newRow.className = 'medication-row p-3 border rounded-lg bg-green-50 flex items-center space-x-2';
+        newRow.setAttribute('data-index', medicationIndex);
+        
+        newRow.innerHTML = `
+            <input type="text" name="medication_name_${medicationIndex}" class="flex-1 border-gray-300 rounded-md p-2 text-sm" placeholder="Drug Name / Eye Drop">
+            <input type="text" name="medication_dose_${medicationIndex}" class="w-24 border-gray-300 rounded-md p-2 text-sm" placeholder="Dose (e.g., 1 drop)">
+            <input type="text" name="medication_frequency_${medicationIndex}" class="w-32 border-gray-300 rounded-md p-2 text-sm" placeholder="Frequency (e.g., TID)">
+            <select name="medication_eye_${medicationIndex}" class="w-24 border-gray-300 rounded-md p-2 text-sm">
+                <option value="OU">OU</option>
+                <option value="OD">OD</option>
+                <option value="OS">OS</option>
+            </select>
+            <input type="number" name="medication_duration_value_${medicationIndex}" class="w-24 border-gray-300 rounded-md p-2 text-sm" placeholder="Duration">
+            <select name="medication_duration_unit_${medicationIndex}" class="w-24 border-gray-300 rounded-md p-2 text-sm">
+                <option value="Days">Days</option>
+                <option value="Weeks">Weeks</option>
+                <option value="Months">Months</option>
+            </select>
+            <button type="button" onclick="removeMedicationRow(this)" class="text-red-500 hover:text-red-700 text-lg font-bold">&times;</button>
+        `;
+        list.appendChild(newRow);
+    }
+
+    function removeMedicationRow(button) {
+        button.closest('.medication-row').remove();
+    }
+</script>
+
+{% endblock %}

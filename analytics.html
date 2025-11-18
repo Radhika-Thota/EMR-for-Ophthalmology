@@ -1,0 +1,460 @@
+{% extends 'layout.html' %} {% block content %}
+<div class="container mx-auto px-4 py-8">
+  <h1 class="text-4xl font-bold text-blue-800 mb-8 text-center">
+    Ophthalmology EMR Analytics Dashboard
+  </h1>
+
+  <!-- Key Metrics / Overview Section -->
+  <div class="bg-white p-6 rounded-lg shadow-xl mb-8">
+    <h2 class="text-3xl font-semibold text-blue-700 mb-6">
+      Key Metrics Overview
+    </h2>
+    <div
+      class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 text-center"
+    >
+      <div class="bg-blue-50 p-4 rounded-lg shadow-sm">
+        <p class="text-2xl font-bold text-blue-600">{{ total_patients }}</p>
+        <p class="text-lg text-gray-700">Total Patients</p>
+      </div>
+      <div class="bg-green-50 p-4 rounded-lg shadow-sm">
+        <p class="text-2xl font-bold text-green-600">
+          {{ total_medical_records }}
+        </p>
+        <p class="text-lg text-gray-700">Total Medical Records</p>
+      </div>
+      <div class="bg-purple-50 p-4 rounded-lg shadow-sm">
+        <p class="text-2xl font-bold text-purple-600">
+          {{ average_visits_per_patient | default('0.00') }}
+        </p>
+        <p class="text-lg text-gray-700">Avg. Visits per Patient</p>
+      </div>
+      <div class="bg-yellow-50 p-4 rounded-lg shadow-sm">
+        <p class="text-lg font-bold text-yellow-800">
+          {{ most_recent_record_date | default('N/A') }}
+        </p>
+        <p class="text-md text-gray-700">Most Recent Record</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Demographics & Growth Section -->
+  <div class="bg-white p-6 rounded-lg shadow-xl mb-8">
+    <h2 class="text-3xl font-semibold text-blue-700 mb-6">
+      Demographics & Growth
+    </h2>
+    {# Use items-stretch to ensure grid cells stretch to the height of the
+    tallest item in their row #}
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-8 items-stretch">
+      <!-- Gender Distribution Chart (Chart.js Pie) -->
+      <div class="bg-gray-50 p-4 rounded-lg shadow-sm flex flex-col h-full">
+        <h3 class="text-2xl font-medium text-gray-800 mb-4">
+          Patient Gender Distribution
+        </h3>
+        {# Increased height for gender chart container #}
+        <div class="relative w-full h-[300px] flex-shrink-0 flex-grow-0">
+          {# Adjusted height #}
+          <canvas id="genderChart" class="w-full h-full"></canvas>
+        </div>
+        {# Added overflow-y-auto to prevent text from pushing content down if it
+        gets too long #}
+        <div
+          class="text-center text-gray-700 mt-2 text-sm overflow-y-auto max-h-40 p-1 border-t border-gray-200"
+        >
+          
+          <p class="text-gray-500 mt-4">
+            This pie chart visualizes the distribution of patients by gender.
+            Add patients with varied gender information to see a more diverse
+            chart.
+          </p>
+        </div>
+      </div>
+
+      <!-- Age Distribution Chart (Chart.js Vertical Bar) -->
+      <div class="bg-gray-50 p-4 rounded-lg shadow-sm flex flex-col h-full">
+        <h3 class="text-2xl font-medium text-gray-800 mb-4">
+          Patient Age Distribution
+        </h3>
+        <div class="relative w-full h-[300px] flex-shrink-0 flex-grow-0">
+          <canvas id="ageDistributionChart" class="w-full h-full"></canvas>
+        </div>
+        <div
+          class="text-center text-gray-700 mt-2 text-sm overflow-y-auto max-h-40 p-1 border-t border-gray-200"
+        >
+          <p class="text-gray-500 mt-4">
+            This bar chart shows patient distribution across different age
+            groups. Ensure patients have their 'Date of Birth' entered to
+            populate this chart.
+          </p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Clinical Insights Section -->
+  <div class="bg-white p-6 rounded-lg shadow-xl mb-8">
+    <h2 class="text-3xl font-semibold text-blue-700 mb-6">Clinical Insights</h2>
+    {# Grid for side-by-side layout: Monthly Case Trends and Top Diagnoses #}
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-8 items-stretch">
+      <!-- Monthly Case Trends Chart (Chart.js Line Chart) -->
+      <div class="bg-gray-50 p-4 rounded-lg shadow-sm flex flex-col h-full">
+        <h3 class="text-2xl font-medium text-gray-800 mb-4">
+          Monthly Case Trends
+        </h3>
+        <div class="relative w-full h-[450px] flex-shrink-0 flex-grow-0">
+          {# Consistent height with diagnoses chart #}
+          <canvas id="monthlyCaseTrendsChart" class="w-full h-full"></canvas>
+        </div>
+        <div
+          class="text-center text-gray-700 mt-2 text-sm overflow-y-auto max-h-40 p-1 border-t border-gray-200"
+        >
+          
+          <p class="text-gray-500 mt-4">
+            This line chart tracks the number of medical records created each
+            month (representing cases/visits). Add more medical records over
+            different dates to see trends.
+          </p>
+        </div>
+      </div>
+
+      <!-- Top 10 Common Diagnoses Chart (Chart.js Horizontal Bar) -->
+      <div class="bg-gray-50 p-4 rounded-lg shadow-sm flex flex-col h-full">
+        <h3 class="text-2xl font-medium text-gray-800 mb-4">
+          Top 10 Common Diagnoses
+        </h3>
+        {# Consistent height with monthly trends chart #}
+        <div class="relative w-full h-[450px] flex-shrink-0 flex-grow-0">
+          <canvas id="topDiagnosesChart" class="w-full h-full"></canvas>
+        </div>
+        <div
+          class="text-center text-gray-700 mt-2 text-sm overflow-y-auto max-h-40 p-1 border-t border-gray-200"
+        >
+          
+          <p class="text-gray-500 mt-4">
+            This bar chart displays the most frequent diagnoses recorded. Add
+            medical records with diagnosis entries to populate this chart.
+          </p>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+  document.addEventListener('DOMContentLoaded', function() {
+      console.log('=== ANALYTICS PAGE LOADED ===');
+      
+      // --- Chart Data from Flask ---
+      const genderData = {{ gender_data | tojson | safe }};
+      const ageDistributionData = {{ age_distribution_data | tojson | safe }};
+      const monthlyCaseTrendsData = {{ monthly_case_trends_data | tojson | safe }};
+      const topDiagnosesData = {{ top_diagnoses_data | tojson | safe }};
+
+      // --- Enhanced Console logging for debugging ---
+      console.log('--- Analytics Data Received in JS ---');
+      console.log('genderData:', genderData, 'Has data:', Object.keys(genderData).length > 0);
+      console.log('ageDistributionData:', ageDistributionData, 'Has data:', Object.keys(ageDistributionData).length > 0);
+      console.log('monthlyCaseTrendsData:', monthlyCaseTrendsData, 'Has data:', Object.keys(monthlyCaseTrendsData).length > 0);
+      console.log('topDiagnosesData:', topDiagnosesData, 'Has data:', Object.keys(topDiagnosesData).length > 0);
+
+      // Helper function to check if an object has meaningful data
+      function hasChartData(obj) {
+          if (!obj || Object.keys(obj).length === 0) return false;
+          // Check if any value is greater than 0
+          return Object.values(obj).some(val => val > 0);
+      }
+
+      // Function to display "no data" message
+      function displayNoDataMessage(ctx, message) {
+          ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
+          ctx.font = "16px Arial";
+          ctx.textAlign = "center";
+          ctx.fillStyle = "#666";
+          ctx.fillText(message, ctx.canvas.width / 2, ctx.canvas.height / 2);
+      }
+
+      // --- 1. Gender Distribution Chart (Chart.js Pie Chart) ---
+const genderCtx = document.getElementById('genderChart');
+if (genderCtx) {
+    const ctx = genderCtx.getContext('2d');
+    if (hasChartData(genderData)) {
+        // Define custom colors for gender categories
+        const genderColors = {
+            'Male': {
+                background: 'rgba(54, 162, 235, 0.8)',    // Blue
+                border: 'rgba(54, 162, 235, 1)'
+            },
+            'Female': {
+                background: 'rgba(255, 182, 193, 0.8)',   // Pink
+                border: 'rgba(255, 182, 193, 1)'
+            },
+            'Other': {
+                background: 'rgba(147, 112, 219, 0.8)',   // Purple
+                border: 'rgba(147, 112, 219, 1)'
+            }
+        };
+
+        // Create arrays for colors based on the label order
+        const backgroundColors = [];
+        const borderColors = [];
+        
+        Object.keys(genderData).forEach(gender => {
+            const colorKey = gender in genderColors ? gender : 'Other';
+            backgroundColors.push(genderColors[colorKey].background);
+            borderColors.push(genderColors[colorKey].border);
+        });
+
+        new Chart(ctx, {
+            type: 'pie',
+            data: {
+                labels: Object.keys(genderData),
+                datasets: [{
+                    label: 'Gender Distribution',
+                    data: Object.values(genderData),
+                    backgroundColor: backgroundColors,
+                    borderColor: borderColors,
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                 aspectRatio: 1.5,
+                plugins: {
+                    title: {
+                        display: true,
+                        text: 'Patient Gender Distribution'
+                    },
+                    legend: {
+                        position: 'bottom',
+                    },
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                let label = context.label || '';
+                                if (label) {
+                                    label += ': ';
+                                }
+                                if (context.parsed !== null) {
+                                    const total = Object.values(genderData).reduce((a, b) => a + b, 0);
+                                    label += context.parsed + ' (' + ((context.parsed / total) * 100).toFixed(1) + '%)';
+                                }
+                                return label;
+                            }
+                        }
+                    }
+                }
+            }
+        });
+        console.log('Gender chart created successfully');
+    } else {
+        displayNoDataMessage(ctx, "No gender data available");
+        console.log('No gender data to display');
+    }
+} else {
+    console.error('Gender chart canvas element not found');
+}
+
+      // --- 2. Age Distribution Chart (Chart.js Vertical Bar Chart) ---
+      const ageDistributionCtx = document.getElementById('ageDistributionChart');
+      if (ageDistributionCtx) {
+          const ctx = ageDistributionCtx.getContext('2d');
+          if (hasChartData(ageDistributionData)) {
+              new Chart(ctx, {
+                  type: 'bar',
+                  data: {
+                      labels: Object.keys(ageDistributionData),
+                      datasets: [{
+                          label: 'Number of Patients',
+                          data: Object.values(ageDistributionData),
+                          backgroundColor: 'rgba(153, 102, 255, 0.8)',
+                          borderColor: 'rgba(153, 102, 255, 1)',
+                          borderWidth: 1
+                      }]
+                  },
+                  options: {
+                      responsive: true,
+                      maintainAspectRatio: false,
+                      plugins: {
+                          title: {
+                              display: true,
+                              text: 'Patient Age Distribution'
+                          },
+                          legend: {
+                              display: false
+                          }
+                      },
+                      scales: {
+                          x: {
+                              title: {
+                                  display: true,
+                                  text: 'Age Group'
+                              },
+                              ticks: {
+                                  autoSkip: true,
+                                  maxRotation: 45,
+                                  minRotation: 0,
+                              }
+                          },
+                          y: {
+                              beginAtZero: true,
+                              title: {
+                                  display: true,
+                                  text: 'Number of Patients'
+                              },
+                              ticks: {
+                                  stepSize: 1
+                              }
+                          }
+                      }
+                  }
+              });
+              console.log('Age distribution chart created successfully');
+          } else {
+              displayNoDataMessage(ctx, "No age distribution data available");
+              console.log('No age distribution data to display');
+          }
+      } else {
+          console.error('Age distribution chart canvas element not found');
+      }
+
+      // --- 3. Monthly Case Trends Chart (Chart.js Line Chart) ---
+      const monthlyCaseTrendsCtx = document.getElementById('monthlyCaseTrendsChart');
+      if (monthlyCaseTrendsCtx) {
+          const ctx = monthlyCaseTrendsCtx.getContext('2d');
+          if (hasChartData(monthlyCaseTrendsData)) {
+              new Chart(ctx, {
+                  type: 'line',
+                  data: {
+                      labels: Object.keys(monthlyCaseTrendsData),
+                      datasets: [{
+                          label: 'Medical Records Created',
+                          data: Object.values(monthlyCaseTrendsData),
+                          backgroundColor: 'rgba(75, 192, 192, 0.6)',
+                          borderColor: 'rgba(75, 192, 192, 1)',
+                          borderWidth: 2,
+                          fill: true,
+                          tension: 0.3
+                      }]
+                  },
+                  options: {
+                      responsive: true,
+                      maintainAspectRatio: false,
+                      plugins: {
+                          title: {
+                              display: true,
+                              text: 'Monthly Case Trends'
+                          },
+                          legend: {
+                              position: 'top',
+                          }
+                      },
+                      scales: {
+                          y: {
+                              beginAtZero: true,
+                              title: {
+                                  display: true,
+                                  text: 'Number of Cases'
+                              },
+                              ticks: {
+                                  stepSize: 1
+                              }
+                          },
+                          x: {
+                              title: {
+                                  display: true,
+                                  text: 'Month-Year'
+                              }
+                          }
+                      }
+                  }
+              });
+              console.log('Monthly case trends chart created successfully');
+          } else {
+              displayNoDataMessage(ctx, "No monthly case trends data available");
+              console.log('No monthly case trends data to display');
+          }
+      } else {
+          console.error('Monthly case trends chart canvas element not found');
+      }
+
+      // --- 4. Top 10 Common Diagnoses Chart (Chart.js Horizontal Bar Chart) ---
+      const topDiagnosesCtx = document.getElementById('topDiagnosesChart');
+      if (topDiagnosesCtx) {
+          const ctx = topDiagnosesCtx.getContext('2d');
+          if (hasChartData(topDiagnosesData)) {
+              new Chart(ctx, {
+                  type: 'bar',
+                  data: {
+                      labels: Object.keys(topDiagnosesData),
+                      datasets: [{
+                          label: 'Count',
+                          data: Object.values(topDiagnosesData),
+                          backgroundColor: 'rgba(255, 159, 64, 0.8)',
+                          borderColor: 'rgba(255, 159, 64, 1)',
+                          borderWidth: 1
+                      }]
+                  },
+                  options: {
+                      indexAxis: 'y',
+                      responsive: true,
+                      maintainAspectRatio: false,
+                      plugins: {
+                          title: {
+                              display: true,
+                              text: 'Top 10 Common Diagnoses'
+                          },
+                          legend: {
+                              display: false
+                          },
+                          tooltip: {
+                              callbacks: {
+                                  label: function(context) {
+                                      return context.label + ': ' + context.parsed.x;
+                                  }
+                              }
+                          }
+                      },
+                      scales: {
+                          x: {
+                              beginAtZero: true,
+                              title: {
+                                  display: true,
+                                  text: 'Count'
+                              },
+                              ticks: {
+                                  stepSize: 1
+                              }
+                          },
+                          y: {
+                              title: {
+                                  display: true,
+                                  text: 'Diagnosis'
+                              },
+                              ticks: {
+                                  autoSkip: false,
+                                  maxRotation: 0,
+                                  minRotation: 0,
+                                  callback: function(value, index, values) {
+                                      const maxLength = 25;
+                                      const label = value;
+                                      return label.length > maxLength ? label.substring(0, maxLength - 3) + '...' : label;
+                                  }
+                              }
+                          }
+                      }
+                  }
+              });
+              console.log('Top diagnoses chart created successfully');
+          } else {
+              displayNoDataMessage(ctx, "No top diagnoses data available");
+              console.log('No top diagnoses data to display');
+          }
+      } else {
+          console.error('Top diagnoses chart canvas element not found');
+      }
+
+      console.log('=== ANALYTICS CHARTS INITIALIZATION COMPLETE ===');
+  });
+</script>
+{% endblock %}
